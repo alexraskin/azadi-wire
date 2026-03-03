@@ -14,7 +14,12 @@ if (!article) {
 }
 ---
 
-<Base title={article.title}>
+<Base
+  title={article.title}
+  description={article.summary || undefined}
+  image={article.thumbnail_url || undefined}
+  ogType="article"
+>
   <article>
     <h1 class="article-detail-title">{article.title}</h1>
     <div class="article-detail-meta">

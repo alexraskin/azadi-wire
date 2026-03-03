@@ -3,24 +3,45 @@ import '../styles/global.css';
 
 interface Props {
   title: string;
+  description?: string;
+  image?: string;
+  ogType?: string;
 }
 
-const { title } = Astro.props;
+const SITE_URL = 'https://azadiwire.org';
+const DEFAULT_DESC = 'Azadi Wire – Independent Iran news aggregation';
+const DEFAULT_IMAGE = `${SITE_URL}/favicon-96x96.png`;
+
+const { title, description, image, ogType } = Astro.props;
 const pageTitle = `${title} | Azadi Wire`;
+const metaDesc = description || DEFAULT_DESC;
+const metaImage = image || DEFAULT_IMAGE;
+const metaType = ogType || 'website';
+const canonicalUrl = Astro.url.href;
 ---
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Azadi Wire – Independent Iran news aggregation" />
+    <meta name="description" content={metaDesc} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={metaDesc} />
+    <meta property="og:type" content={metaType} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={metaImage} />
+    <meta property="og:site_name" content="Azadi Wire" />
+    <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={metaDesc} />
+    <meta name="twitter:image" content={metaImage} />
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="alternate" type="application/rss+xml" title="Azadi Wire" href="/feed.xml" />
-    <link rel="canonical" href={Astro.url.href} />
+    <link rel="canonical" href={canonicalUrl} />
     <title>{pageTitle}</title>
   </head>
   <body>
