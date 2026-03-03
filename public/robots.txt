@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://azadiwire.org/sitemap-index.xml
