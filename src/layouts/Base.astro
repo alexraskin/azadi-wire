@@ -48,11 +48,22 @@ const canonicalUrl = Astro.url.href;
     <header class="site-header">
       <div class="container">
         <a href="/" class="wordmark">Azadi Wire</a>
-        <nav class="site-nav">
-          <a href="/">Feed</a>
-          <a href="/sources">Sources</a>
-          <a href="/about">About</a>
-        </nav>
+        <div class="header-right">
+          <form action="/" method="GET" class="search-form">
+            <input
+              type="search"
+              name="q"
+              placeholder="Search..."
+              value={Astro.url.searchParams.get('q') || ''}
+              autocomplete="off"
+            />
+          </form>
+          <nav class="site-nav">
+            <a href="/">Feed</a>
+            <a href="/sources">Sources</a>
+            <a href="/about">About</a>
+          </nav>
+        </div>
       </div>
     </header>
     <main class="container">

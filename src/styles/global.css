@@ -89,6 +89,12 @@ a:hover {
   text-decoration: none;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .site-nav {
   display: flex;
   gap: 16px;
@@ -97,6 +103,7 @@ a:hover {
 .site-nav a {
   font-size: 14px;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .site-nav a:hover {
@@ -111,6 +118,45 @@ a:hover {
   text-align: center;
   font-size: 14px;
   color: var(--text-muted);
+}
+
+/* Search */
+.search-form {
+  display: flex;
+  align-items: center;
+}
+
+.search-form input[type="search"] {
+  width: 140px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  transition: width 0.2s ease;
+}
+
+.search-form input[type="search"]:focus {
+  width: 200px;
+  border-color: var(--text-muted);
+}
+
+.search-form input[type="search"]::placeholder {
+  color: var(--text-muted);
+}
+
+.search-results-count {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.search-results-count a {
+  color: var(--text-muted);
+  margin-left: 6px;
 }
 
 /* Topic pills */

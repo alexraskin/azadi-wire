@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getArticles, getArticleSourceNames } from '../lib/db';
+import { getArticles, searchArticles, getArticleSourceNames } from '../lib/db';
 import { relativeTime } from '../lib/time';
 import { TOPICS, TOPIC_LABELS } from '../lib/types';
 import type { Topic } from '../lib/types';
@@ -8,19 +8,26 @@ import type { Topic } from '../lib/types';
 const url = Astro.url;
 const currentTopic = url.searchParams.get('topic') || '';
 const currentSource = url.searchParams.get('source') || '';
+const currentQuery = url.searchParams.get('q')?.trim() || '';
 const page = parseInt(url.searchParams.get('page') || '1', 10);
 
 const db = (Astro.locals as any).runtime.env.DB;
 
-const [{ articles, total, pages }, sourceNames] = await Promise.all([
-  getArticles(db, {
-    topic: currentTopic || undefined,
-    source: currentSource || undefined,
-    page,
-    limit: 20,
-  }),
+const isSearching = currentQuery.length > 0;
+
+const [result, sourceNames] = await Promise.all([
+  isSearching
+    ? searchArticles(db, currentQuery, { page, limit: 20 })
+    : getArticles(db, {
+        topic: currentTopic || undefined,
+        source: currentSource || undefined,
+        page,
+        limit: 20,
+      }),
   getArticleSourceNames(db),
 ]);
+
+const { articles, total, pages } = result;
 
 function filterUrl(opts: { topic?: string; source?: string }): string {
   const params = new URLSearchParams();
@@ -34,27 +41,30 @@ function filterUrl(opts: { topic?: string; source?: string }): string {
 
 function pageUrl(p: number): string {
   const params = new URLSearchParams();
-  if (currentTopic) params.set('topic', currentTopic);
-  if (currentSource) params.set('source', currentSource);
+  if (currentQuery) params.set('q', currentQuery);
+  if (!isSearching && currentTopic) params.set('topic', currentTopic);
+  if (!isSearching && currentSource) params.set('source', currentSource);
   params.set('page', String(p));
   return `/?${params.toString()}`;
 }
 ---
 
-<Base title="Feed">
-  <nav class="topic-filter">
-    <a href={filterUrl({ topic: '' })} class:list={['topic-pill', { active: !currentTopic }]}>All</a>
-    {TOPICS.filter(t => t !== 'general').map((topic) => (
-      <a
-        href={filterUrl({ topic })}
-        class:list={['topic-pill', { active: currentTopic === topic }]}
-      >
-        {TOPIC_LABELS[topic]}
-      </a>
-    ))}
-  </nav>
+<Base title={isSearching ? `Search: ${currentQuery}` : 'Feed'}>
+  {!isSearching && (
+    <nav class="topic-filter">
+      <a href={filterUrl({ topic: '' })} class:list={['topic-pill', { active: !currentTopic }]}>All</a>
+      {TOPICS.filter(t => t !== 'general').map((topic) => (
+        <a
+          href={filterUrl({ topic })}
+          class:list={['topic-pill', { active: currentTopic === topic }]}
+        >
+          {TOPIC_LABELS[topic]}
+        </a>
+      ))}
+    </nav>
+  )}
 
-  {sourceNames.length > 0 && (
+  {!isSearching && sourceNames.length > 0 && (
     <nav class="source-filter">
       <a href={filterUrl({ source: '' })} class:list={['source-pill', { active: !currentSource }]}>All sources</a>
       {sourceNames.map((name) => (
@@ -68,8 +78,15 @@ function pageUrl(p: number): string {
     </nav>
   )}
 
+  {isSearching && (
+    <p class="search-results-count">
+      {total} result{total !== 1 ? 's' : ''} for "{currentQuery}"
+      <a href="/">Clear</a>
+    </p>
+  )}
+
   {articles.length === 0 ? (
-    <div class="empty-state">No articles found.</div>
+    <div class="empty-state">{isSearching ? 'No results found.' : 'No articles found.'}</div>
   ) : (
     <ul class="article-list">
       {articles.map((article) => (

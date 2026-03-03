@@ -139,6 +139,42 @@ export async function insertArticle(
     .run();
 }
 
+export async function searchArticles(
+  db: D1Database,
+  query: string,
+  opts: { page?: number; limit?: number } = {}
+): Promise<{ articles: Article[]; total: number; page: number; pages: number }> {
+  const page = Math.max(1, opts.page || 1);
+  const limit = Math.min(100, Math.max(1, opts.limit || 20));
+  const offset = (page - 1) * limit;
+
+  const safeQuery = `"${query.replace(/"/g, '""')}"`;
+
+  const countResult = await db
+    .prepare('SELECT COUNT(*) as total FROM articles_fts WHERE articles_fts MATCH ?')
+    .bind(safeQuery)
+    .first<{ total: number }>();
+  const total = countResult?.total || 0;
+
+  const listResult = await db
+    .prepare(
+      `SELECT a.* FROM articles a
+       JOIN articles_fts fts ON a.rowid = fts.rowid
+       WHERE articles_fts MATCH ?
+       ORDER BY fts.rank
+       LIMIT ? OFFSET ?`
+    )
+    .bind(safeQuery, limit, offset)
+    .all<Article>();
+
+  return {
+    articles: listResult.results,
+    total,
+    page,
+    pages: Math.ceil(total / limit),
+  };
+}
+
 export async function deleteOldArticles(db: D1Database, daysOld: number = 90): Promise<void> {
   const cutoff = new Date(Date.now() - daysOld * 86400000).toISOString();
   await db.prepare('DELETE FROM articles WHERE published_at < ?').bind(cutoff).run();
