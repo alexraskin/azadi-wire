@@ -24,9 +24,9 @@ export const GET: APIRoute = async ({ locals }) => {
       return `    <item>
       <title>${escapeXml(a.title)}</title>
       <link>${escapeXml(a.article_url)}</link>
-      <guid isPermaLink="false">${SITE_URL}/article/${a.id}</guid>
+      <guid isPermaLink="false">${SITE_URL}/article/${a.slug || a.id}</guid>
       <pubDate>${new Date(a.published_at).toUTCString()}</pubDate>
-      <source url="${escapeXml(a.source_url)}">${escapeXml(a.source_name)}</source>
+      <source url="${escapeXml(a.source_url || '')}">${escapeXml(a.source_name)}</source>
       <category>${escapeXml(topic)}</category>${a.summary ? `\n      <description>${escapeXml(a.summary)}</description>` : ''}
     </item>`;
     })

@@ -1,9 +1,12 @@
 import type { APIRoute } from 'astro';
-import { getArticleById } from '../../../lib/db';
+import { getArticleById, getArticleBySlug } from '../../../lib/db';
 
 export const GET: APIRoute = async ({ params, locals }) => {
   const db = (locals as any).runtime.env.DB;
-  const article = await getArticleById(db, params.id!);
+  let article = await getArticleBySlug(db, params.id!);
+  if (!article) {
+    article = await getArticleById(db, params.id!);
+  }
 
   if (!article) {
     return new Response(JSON.stringify({ error: 'Not found' }), {

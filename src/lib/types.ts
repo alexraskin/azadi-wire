@@ -1,5 +1,6 @@
 export interface Article {
   id: string;
+  slug: string;
   title: string;
   summary: string | null;
   source_name: string;
@@ -9,6 +10,16 @@ export interface Article {
   published_at: string;
   fetched_at: string;
   topic: Topic;
+}
+
+export function slugify(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
 }
 
 export interface Source {

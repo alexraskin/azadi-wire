@@ -1,4 +1,5 @@
 import type { Article, Source } from '../types';
+import { slugify } from '../types';
 import { getActiveSources, articleUrlExists, getTodayTitles, insertArticle, deleteOldArticles, insertFetcherRun } from '../db';
 import { fetchRSS } from './rss';
 import { scrapePage } from './scraper';
@@ -26,8 +27,11 @@ export async function runFetcher(db: any, ai?: any): Promise<{ inserted: number;
           if (isDuplicate(item.title, existingTitles)) continue;
 
           const topic = await categorize(item.title, item.summary, ai);
+          const id = crypto.randomUUID();
+          const slug = `${slugify(item.title)}-${id.slice(0, 6)}`;
           const article: Article = {
-            id: crypto.randomUUID(),
+            id,
+            slug,
             title: item.title,
             summary: item.summary,
             source_name: source.name,

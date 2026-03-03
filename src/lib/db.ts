@@ -67,6 +67,13 @@ export async function getArticleById(
   return db.prepare('SELECT * FROM articles WHERE id = ?').bind(id).first<Article>();
 }
 
+export async function getArticleBySlug(
+  db: D1Database,
+  slug: string
+): Promise<Article | null> {
+  return db.prepare('SELECT * FROM articles WHERE slug = ?').bind(slug).first<Article>();
+}
+
 export async function getTopicCounts(db: D1Database): Promise<TopicCount[]> {
   const result = await db
     .prepare('SELECT topic as name, COUNT(*) as count FROM articles GROUP BY topic ORDER BY count DESC')
@@ -121,11 +128,12 @@ export async function insertArticle(
 ): Promise<void> {
   await db
     .prepare(
-      `INSERT OR IGNORE INTO articles (id, title, summary, source_name, source_url, article_url, thumbnail_url, published_at, fetched_at, topic)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT OR IGNORE INTO articles (id, slug, title, summary, source_name, source_url, article_url, thumbnail_url, published_at, fetched_at, topic)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(
       article.id,
+      article.slug,
       article.title,
       article.summary,
       article.source_name,

@@ -1,13 +1,17 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getArticleById } from '../../lib/db';
+import { getArticleBySlug, getArticleById } from '../../lib/db';
 import { formatDate } from '../../lib/time';
 import { TOPIC_LABELS } from '../../lib/types';
 import type { Topic } from '../../lib/types';
 
-const { id } = Astro.params;
+const { slug } = Astro.params;
 const db = (Astro.locals as any).runtime.env.DB;
-const article = await getArticleById(db, id!);
+
+let article = await getArticleBySlug(db, slug!);
+if (!article) {
+  article = await getArticleById(db, slug!);
+}
 
 if (!article) {
   return new Response(null, { status: 404, statusText: 'Not Found' });
