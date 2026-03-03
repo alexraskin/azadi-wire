@@ -9,6 +9,7 @@ Live at [azadiwire.org](https://azadiwire.org)
 - **Astro** (SSR mode) for pages and API routes
 - **Cloudflare Workers** for hosting
 - **Cloudflare D1** (SQLite) for article storage
+- **Cloudflare Workers AI** for article topic classification
 - **Vanilla CSS** with dark mode support
 - Zero client-side JavaScript — all filtering via query parameters
 
@@ -37,7 +38,7 @@ src/
       index.ts              # Orchestrator
       rss.ts                # RSS/Atom feed parser
       scraper.ts            # HTML scraper (per-source selectors)
-      categorizer.ts        # Keyword-based topic classification
+      categorizer.ts        # AI-powered topic classification (keyword fallback)
       dedup.ts              # Title similarity deduplication
   styles/
     global.css              # All styles, light + dark mode
@@ -96,7 +97,7 @@ A cron trigger runs every 15 minutes. It:
 1. Reads all active sources from the `sources` table
 2. Fetches RSS feeds (or scrapes HTML for scrape-type sources)
 3. Extracts title, summary, URL, thumbnail, and publish date
-4. Classifies each article into a topic (human rights, politics, culture, protests, sanctions, or general) using keyword matching
+4. Classifies each article into a topic (war, human rights, politics, culture, protests, sanctions, or general) using Cloudflare Workers AI, falling back to keyword matching if the AI is unavailable
 5. Deduplicates by URL and by title similarity (90% threshold)
 6. Inserts new articles into D1
 7. Deletes articles older than 10 days
@@ -114,6 +115,10 @@ A cron trigger runs every 15 minutes. It:
 - Middle East Eye
 - VOA News Iran
 - Amnesty International
+- Pars Today
+- UN News Middle East
+- HRANA (Human Rights Activists News Agency)
+- Tasnim News Agency
 
 ## API
 
