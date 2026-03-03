@@ -2,8 +2,8 @@ import type { APIRoute } from 'astro';
 import { runFetcher } from '../../lib/fetcher';
 
 export const GET: APIRoute = async ({ locals }) => {
-  const db = (locals as any).runtime.env.DB;
-  const result = await runFetcher(db);
+  const env = (locals as any).runtime.env;
+  const result = await runFetcher(env.DB, env.AI);
 
   return new Response(JSON.stringify(result), {
     headers: { 'Content-Type': 'application/json' },

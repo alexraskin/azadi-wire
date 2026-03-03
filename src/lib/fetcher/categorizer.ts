@@ -1,4 +1,5 @@
 import type { Topic } from '../types';
+import { TOPICS } from '../types';
 
 const KEYWORD_MAP: Record<Exclude<Topic, 'general'>, string[]> = {
   war: [
@@ -30,7 +31,7 @@ const KEYWORD_MAP: Record<Exclude<Topic, 'general'>, string[]> = {
   ],
 };
 
-export function categorize(title: string, summary: string | null): Topic {
+function categorizeByKeywords(title: string, summary: string | null): Topic {
   const text = `${title} ${summary || ''}`.toLowerCase();
   let bestTopic: Topic = 'general';
   let bestCount = 0;
@@ -47,4 +48,48 @@ export function categorize(title: string, summary: string | null): Topic {
   }
 
   return bestTopic;
+}
+
+const SYSTEM_PROMPT =
+  'You are a news article classifier. Given an article title and summary about Iran, ' +
+  'classify it into exactly one topic. Respond with only the topic name, nothing else.';
+
+function buildUserPrompt(title: string, summary: string | null): string {
+  const topicList = TOPICS.filter((t) => t !== 'general').join(', ');
+  let prompt = `Topics: ${topicList}, general\n\nTitle: ${title}`;
+  if (summary) prompt += `\nSummary: ${summary}`;
+  return prompt;
+}
+
+function parseAIResponse(raw: string): Topic | null {
+  const cleaned = raw.trim().toLowerCase().replace(/[^a-z_]/g, '');
+  if ((TOPICS as string[]).includes(cleaned)) return cleaned as Topic;
+  for (const topic of TOPICS) {
+    if (raw.toLowerCase().includes(topic)) return topic;
+  }
+  return null;
+}
+
+export async function categorize(
+  title: string,
+  summary: string | null,
+  ai?: any,
+): Promise<Topic> {
+  if (ai) {
+    try {
+      const response = await ai.run('@cf/meta/llama-3.1-8b-instruct', {
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: buildUserPrompt(title, summary) },
+        ],
+        max_tokens: 20,
+      });
+      const topic = parseAIResponse(response.response ?? '');
+      if (topic) return topic;
+    } catch {
+      // AI unavailable — fall through to keyword matching
+    }
+  }
+
+  return categorizeByKeywords(title, summary);
 }

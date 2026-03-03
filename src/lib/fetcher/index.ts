@@ -5,7 +5,7 @@ import { scrapePage } from './scraper';
 import { categorize } from './categorizer';
 import { isDuplicate } from './dedup';
 
-export async function runFetcher(db: any): Promise<{ inserted: number; errors: number }> {
+export async function runFetcher(db: any, ai?: any): Promise<{ inserted: number; errors: number }> {
   let inserted = 0;
   let errors = 0;
 
@@ -24,7 +24,7 @@ export async function runFetcher(db: any): Promise<{ inserted: number; errors: n
 
           if (isDuplicate(item.title, existingTitles)) continue;
 
-          const topic = categorize(item.title, item.summary);
+          const topic = await categorize(item.title, item.summary, ai);
           const article: Article = {
             id: crypto.randomUUID(),
             title: item.title,
