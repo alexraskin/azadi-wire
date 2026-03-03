@@ -143,3 +143,30 @@ export async function deleteOldArticles(db: D1Database, daysOld: number = 90): P
   const cutoff = new Date(Date.now() - daysOld * 86400000).toISOString();
   await db.prepare('DELETE FROM articles WHERE published_at < ?').bind(cutoff).run();
 }
+
+export interface FetcherRun {
+  id: string;
+  started_at: string;
+  finished_at: string;
+  inserted: number;
+  errors: number;
+  duration_ms: number;
+}
+
+export async function insertFetcherRun(db: D1Database, run: FetcherRun): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO fetcher_runs (id, started_at, finished_at, inserted, errors, duration_ms)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    .bind(run.id, run.started_at, run.finished_at, run.inserted, run.errors, run.duration_ms)
+    .run();
+}
+
+export async function getRecentFetcherRuns(db: D1Database, limit: number = 10): Promise<FetcherRun[]> {
+  const result = await db
+    .prepare('SELECT * FROM fetcher_runs ORDER BY started_at DESC LIMIT ?')
+    .bind(limit)
+    .all<FetcherRun>();
+  return result.results;
+}

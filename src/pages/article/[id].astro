@@ -10,7 +10,7 @@ const db = (Astro.locals as any).runtime.env.DB;
 const article = await getArticleById(db, id!);
 
 if (!article) {
-  return Astro.redirect('/');
+  return new Response(null, { status: 404, statusText: 'Not Found' });
 }
 ---
 

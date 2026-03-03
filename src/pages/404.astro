@@ -1,0 +1,30 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Not Found">
+  <div class="not-found">
+    <h1 class="not-found-code">404</h1>
+    <p class="not-found-message">Page not found</p>
+    <a href="/" class="back-link">← Back to Feed</a>
+  </div>
+</Base>
+
+<style>
+  .not-found {
+    text-align: center;
+    padding: 64px 0;
+  }
+  .not-found-code {
+    font-size: 72px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 8px;
+    color: var(--text-muted);
+  }
+  .not-found-message {
+    font-size: 18px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+</style>

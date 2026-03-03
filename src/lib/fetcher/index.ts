@@ -1,11 +1,12 @@
 import type { Article, Source } from '../types';
-import { getActiveSources, articleUrlExists, getTodayTitles, insertArticle, deleteOldArticles } from '../db';
+import { getActiveSources, articleUrlExists, getTodayTitles, insertArticle, deleteOldArticles, insertFetcherRun } from '../db';
 import { fetchRSS } from './rss';
 import { scrapePage } from './scraper';
 import { categorize } from './categorizer';
 import { isDuplicate } from './dedup';
 
 export async function runFetcher(db: any, ai?: any): Promise<{ inserted: number; errors: number }> {
+  const startedAt = new Date();
   let inserted = 0;
   let errors = 0;
 
@@ -50,6 +51,20 @@ export async function runFetcher(db: any, ai?: any): Promise<{ inserted: number;
     await deleteOldArticles(db);
   } catch {
     errors++;
+  }
+
+  const finishedAt = new Date();
+  try {
+    await insertFetcherRun(db, {
+      id: crypto.randomUUID(),
+      started_at: startedAt.toISOString(),
+      finished_at: finishedAt.toISOString(),
+      inserted,
+      errors,
+      duration_ms: finishedAt.getTime() - startedAt.getTime(),
+    });
+  } catch {
+    // Don't let logging failures break the fetcher
   }
 
   return { inserted, errors };
