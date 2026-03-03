@@ -20,39 +20,37 @@ type D1Result<T = unknown> = {
 
 export async function getArticles(
   db: D1Database,
-  opts: { topic?: string; page?: number; limit?: number } = {}
+  opts: { topic?: string; source?: string; page?: number; limit?: number } = {}
 ): Promise<{ articles: Article[]; total: number; page: number; pages: number }> {
   const page = Math.max(1, opts.page || 1);
   const limit = Math.min(100, Math.max(1, opts.limit || 20));
   const offset = (page - 1) * limit;
 
-  let countQuery = 'SELECT COUNT(*) as total FROM articles';
-  let listQuery = 'SELECT * FROM articles';
+  const conditions: string[] = [];
   const params: unknown[] = [];
 
   if (opts.topic && opts.topic !== 'all') {
-    countQuery += ' WHERE topic = ?';
-    listQuery += ' WHERE topic = ?';
+    conditions.push('topic = ?');
     params.push(opts.topic);
   }
 
-  listQuery += ' ORDER BY published_at DESC LIMIT ? OFFSET ?';
-
-  const countStmt = opts.topic && opts.topic !== 'all'
-    ? db.prepare(countQuery).bind(opts.topic)
-    : db.prepare(countQuery);
-
-  const countResult = await countStmt.first<{ total: number }>();
-  const total = countResult?.total || 0;
-
-  const listParams = [...params, limit, offset];
-  let listStmt = db.prepare(listQuery);
-  for (const p of listParams) {
-    listStmt = listStmt.bind(...listParams);
-    break;
+  if (opts.source) {
+    conditions.push('source_name = ?');
+    params.push(opts.source);
   }
 
-  const listResult = await db.prepare(listQuery).bind(...listParams).all<Article>();
+  const where = conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : '';
+
+  const countResult = await db
+    .prepare('SELECT COUNT(*) as total FROM articles' + where)
+    .bind(...params)
+    .first<{ total: number }>();
+  const total = countResult?.total || 0;
+
+  const listResult = await db
+    .prepare('SELECT * FROM articles' + where + ' ORDER BY published_at DESC LIMIT ? OFFSET ?')
+    .bind(...params, limit, offset)
+    .all<Article>();
 
   return {
     articles: listResult.results,
@@ -88,6 +86,13 @@ export async function getAllSources(db: D1Database): Promise<Source[]> {
     .prepare('SELECT * FROM sources ORDER BY name')
     .all<Source>();
   return result.results;
+}
+
+export async function getArticleSourceNames(db: D1Database): Promise<string[]> {
+  const result = await db
+    .prepare('SELECT DISTINCT source_name FROM articles ORDER BY source_name')
+    .all<{ source_name: string }>();
+  return result.results.map((r) => r.source_name);
 }
 
 export async function articleUrlExists(

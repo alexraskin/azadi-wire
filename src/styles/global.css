@@ -152,6 +152,36 @@ a:hover {
   border-radius: 4px;
 }
 
+/* Source filter */
+.source-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 32px;
+}
+
+.source-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  background: transparent;
+}
+
+.source-pill:hover {
+  text-decoration: none;
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+.source-pill.active {
+  background: var(--pill-active-bg);
+  color: var(--pill-active-text);
+  border-color: var(--pill-active-bg);
+}
+
 /* Article list */
 .article-list {
   list-style: none;
@@ -164,6 +194,24 @@ a:hover {
 
 .article-item:first-child {
   padding-top: 0;
+}
+
+.article-item.has-thumb {
+  display: flex;
+  gap: 16px;
+}
+
+.article-thumb {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--badge-bg);
+}
+
+.article-body {
+  flex: 1;
+  min-width: 0;
 }
 
 .article-title {
@@ -231,6 +279,14 @@ a:hover {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.article-detail-thumb {
+  width: 100%;
+  max-height: 360px;
+  object-fit: cover;
+  margin-bottom: 16px;
+  background: var(--badge-bg);
 }
 
 .article-detail-summary {

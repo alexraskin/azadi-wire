@@ -1,29 +1,41 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getArticles } from '../lib/db';
+import { getArticles, getArticleSourceNames } from '../lib/db';
 import { relativeTime } from '../lib/time';
 import { TOPICS, TOPIC_LABELS } from '../lib/types';
 import type { Topic } from '../lib/types';
 
 const url = Astro.url;
 const currentTopic = url.searchParams.get('topic') || '';
+const currentSource = url.searchParams.get('source') || '';
 const page = parseInt(url.searchParams.get('page') || '1', 10);
 
 const db = (Astro.locals as any).runtime.env.DB;
-const { articles, total, pages } = await getArticles(db, {
-  topic: currentTopic || undefined,
-  page,
-  limit: 20,
-});
 
-function topicUrl(topic: string): string {
-  if (!topic) return '/';
-  return `/?topic=${topic}`;
+const [{ articles, total, pages }, sourceNames] = await Promise.all([
+  getArticles(db, {
+    topic: currentTopic || undefined,
+    source: currentSource || undefined,
+    page,
+    limit: 20,
+  }),
+  getArticleSourceNames(db),
+]);
+
+function filterUrl(opts: { topic?: string; source?: string }): string {
+  const params = new URLSearchParams();
+  const t = opts.topic !== undefined ? opts.topic : currentTopic;
+  const s = opts.source !== undefined ? opts.source : currentSource;
+  if (t) params.set('topic', t);
+  if (s) params.set('source', s);
+  const qs = params.toString();
+  return qs ? `/?${qs}` : '/';
 }
 
 function pageUrl(p: number): string {
   const params = new URLSearchParams();
   if (currentTopic) params.set('topic', currentTopic);
+  if (currentSource) params.set('source', currentSource);
   params.set('page', String(p));
   return `/?${params.toString()}`;
 }
@@ -31,10 +43,10 @@ function pageUrl(p: number): string {
 
 <Base title="Feed">
   <nav class="topic-filter">
-    <a href="/" class:list={['topic-pill', { active: !currentTopic }]}>All</a>
+    <a href={filterUrl({ topic: '' })} class:list={['topic-pill', { active: !currentTopic }]}>All</a>
     {TOPICS.filter(t => t !== 'general').map((topic) => (
       <a
-        href={topicUrl(topic)}
+        href={filterUrl({ topic })}
         class:list={['topic-pill', { active: currentTopic === topic }]}
       >
         {TOPIC_LABELS[topic]}
@@ -42,24 +54,48 @@ function pageUrl(p: number): string {
     ))}
   </nav>
 
+  {sourceNames.length > 0 && (
+    <nav class="source-filter">
+      <a href={filterUrl({ source: '' })} class:list={['source-pill', { active: !currentSource }]}>All sources</a>
+      {sourceNames.map((name) => (
+        <a
+          href={filterUrl({ source: name })}
+          class:list={['source-pill', { active: currentSource === name }]}
+        >
+          {name}
+        </a>
+      ))}
+    </nav>
+  )}
+
   {articles.length === 0 ? (
     <div class="empty-state">No articles found.</div>
   ) : (
     <ul class="article-list">
       {articles.map((article) => (
-        <li class="article-item">
-          <h2 class="article-title">
-            <a href={`/article/${article.id}`}>{article.title}</a>
-          </h2>
-          <div class="article-meta">
-            <span>{article.source_name}</span>
-            <span>·</span>
-            <span>{relativeTime(article.published_at)}</span>
-            <span class="badge">{TOPIC_LABELS[article.topic as Topic] || article.topic}</span>
-          </div>
-          {article.summary && (
-            <p class="article-summary">{article.summary}</p>
+        <li class:list={['article-item', { 'has-thumb': !!article.thumbnail_url }]}>
+          {article.thumbnail_url && (
+            <img
+              src={article.thumbnail_url}
+              alt=""
+              class="article-thumb"
+              loading="lazy"
+            />
           )}
+          <div class="article-body">
+            <h2 class="article-title">
+              <a href={`/article/${article.id}`}>{article.title}</a>
+            </h2>
+            <div class="article-meta">
+              <span>{article.source_name}</span>
+              <span>·</span>
+              <span>{relativeTime(article.published_at)}</span>
+              <span class="badge">{TOPIC_LABELS[article.topic as Topic] || article.topic}</span>
+            </div>
+            {article.summary && (
+              <p class="article-summary">{article.summary}</p>
+            )}
+          </div>
         </li>
       ))}
     </ul>

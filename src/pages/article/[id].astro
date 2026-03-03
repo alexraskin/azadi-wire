@@ -23,6 +23,14 @@ if (!article) {
       <span>{formatDate(article.published_at)}</span>
       <span class="badge">{TOPIC_LABELS[article.topic as Topic] || article.topic}</span>
     </div>
+    {article.thumbnail_url && (
+      <img
+        src={article.thumbnail_url}
+        alt=""
+        class="article-detail-thumb"
+        loading="lazy"
+      />
+    )}
     {article.summary && (
       <div class="article-detail-summary">
         <p>{article.summary}</p>
