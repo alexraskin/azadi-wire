@@ -1,6 +1,13 @@
 import type { Topic } from '../types';
 
 const KEYWORD_MAP: Record<Exclude<Topic, 'general'>, string[]> = {
+  war: [
+    'war', 'airstrike', 'airstrikes', 'bombing', 'missile strike', 'military strike',
+    'military operation', 'invasion', 'casualties', 'killed', 'wounded', 'shelling',
+    'bombardment', 'ceasefire', 'conflict', 'combat', 'drone strike', 'warplane',
+    'troops', 'ground offensive', 'retaliation', 'true promise', 'escalation',
+    'civilian casualties', 'martyr', 'martyred', 'defense ministry',
+  ],
   human_rights: [
     'prisoner', 'execution', 'detained', 'irgc', 'crackdown', 'torture',
     'political prisoner', 'evin', 'arbitrary arrest', 'flogging', 'death sentence',

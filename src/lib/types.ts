@@ -20,6 +20,7 @@ export interface Source {
 }
 
 export type Topic =
+  | 'war'
   | 'human_rights'
   | 'politics'
   | 'culture'
@@ -28,6 +29,7 @@ export type Topic =
   | 'general';
 
 export const TOPICS: Topic[] = [
+  'war',
   'human_rights',
   'politics',
   'culture',
@@ -37,6 +39,7 @@ export const TOPICS: Topic[] = [
 ];
 
 export const TOPIC_LABELS: Record<Topic, string> = {
+  war: 'War',
   human_rights: 'Human Rights',
   politics: 'Politics',
   culture: 'Culture',
