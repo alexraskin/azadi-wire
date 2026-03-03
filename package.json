@@ -1,13 +1,13 @@
 {
-	"name": "azadwire",
+	"name": "azadiwire",
 	"type": "module",
 	"version": "0.0.1",
 	"scripts": {
 		"dev": "astro dev",
-		"build": "astro build",
-		"preview": "astro build && wrangler dev",
+		"build": "astro build && node scripts/patch-worker.mjs",
+		"preview": "npm run build && wrangler dev",
 		"astro": "astro",
-		"deploy": "astro build && wrangler deploy",
+		"deploy": "npm run build && wrangler deploy",
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {

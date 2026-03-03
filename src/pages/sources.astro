@@ -1,0 +1,21 @@
+---
+import Base from '../layouts/Base.astro';
+import { getAllSources } from '../lib/db';
+
+const db = (Astro.locals as any).runtime.env.DB;
+const sources = await getAllSources(db);
+---
+
+<Base title="Sources">
+  <h1 class="page-title">Sources</h1>
+  <ul class="source-list">
+    {sources.map((source) => (
+      <li class="source-item">
+        <a href={source.url} target="_blank" rel="noopener noreferrer">
+          {source.name}
+        </a>
+        <span class="badge">{source.type.toUpperCase()}</span>
+      </li>
+    ))}
+  </ul>
+</Base>

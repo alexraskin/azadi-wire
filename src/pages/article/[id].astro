@@ -1,0 +1,36 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getArticleById } from '../../lib/db';
+import { formatDate } from '../../lib/time';
+import { TOPIC_LABELS } from '../../lib/types';
+import type { Topic } from '../../lib/types';
+
+const { id } = Astro.params;
+const db = (Astro.locals as any).runtime.env.DB;
+const article = await getArticleById(db, id!);
+
+if (!article) {
+  return Astro.redirect('/');
+}
+---
+
+<Base title={article.title}>
+  <article>
+    <h1 class="article-detail-title">{article.title}</h1>
+    <div class="article-detail-meta">
+      <span>{article.source_name}</span>
+      <span>·</span>
+      <span>{formatDate(article.published_at)}</span>
+      <span class="badge">{TOPIC_LABELS[article.topic as Topic] || article.topic}</span>
+    </div>
+    {article.summary && (
+      <div class="article-detail-summary">
+        <p>{article.summary}</p>
+      </div>
+    )}
+    <a href={article.article_url} target="_blank" rel="noopener noreferrer" class="btn">
+      Read Full Article ↗
+    </a>
+    <a href="/" class="back-link">← Back to Feed</a>
+  </article>
+</Base>
