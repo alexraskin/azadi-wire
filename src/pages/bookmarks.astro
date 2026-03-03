@@ -1,0 +1,117 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Bookmarks">
+  <h1 class="page-title">Bookmarks</h1>
+
+  <div id="bookmarks-loading" class="empty-state">Loading bookmarks...</div>
+  <div id="bookmarks-empty" class="empty-state" style="display:none">
+    No bookmarks yet. Tap the bookmark icon on any article to save it here.
+  </div>
+  <ul id="bookmarks-list" class="article-list" style="display:none"></ul>
+
+  <script>
+    const STORAGE_KEY = 'azadiwire_bookmarks';
+    const loadingEl = document.getElementById('bookmarks-loading')!;
+    const emptyEl = document.getElementById('bookmarks-empty')!;
+    const listEl = document.getElementById('bookmarks-list')!;
+
+    function getBookmarks(): string[] {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      } catch {
+        return [];
+      }
+    }
+
+    function removeBookmark(slug: string): void {
+      const bookmarks = getBookmarks().filter((s) => s !== slug);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
+    }
+
+    function relativeTime(dateStr: string): string {
+      const now = Date.now();
+      const then = new Date(dateStr).getTime();
+      const diff = Math.floor((now - then) / 1000);
+      if (diff < 60) return 'just now';
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+      return `${Math.floor(diff / 86400)}d ago`;
+    }
+
+    function escapeHtml(str: string): string {
+      const el = document.createElement('span');
+      el.textContent = str;
+      return el.innerHTML;
+    }
+
+    async function loadBookmarks() {
+      const slugs = getBookmarks();
+
+      if (slugs.length === 0) {
+        loadingEl.style.display = 'none';
+        emptyEl.style.display = '';
+        return;
+      }
+
+      const results = await Promise.allSettled(
+        slugs.map((slug) =>
+          fetch(`/api/articles/${encodeURIComponent(slug)}`).then((r) =>
+            r.ok ? r.json() : null
+          )
+        )
+      );
+
+      const articles = results
+        .map((r) => (r.status === 'fulfilled' ? r.value : null))
+        .filter(Boolean);
+
+      loadingEl.style.display = 'none';
+
+      if (articles.length === 0) {
+        emptyEl.style.display = '';
+        return;
+      }
+
+      listEl.style.display = '';
+      listEl.innerHTML = articles
+        .map(
+          (a: any) => `
+        <li class="article-item">
+          <div class="article-body">
+            <h2 class="article-title">
+              <a href="/article/${escapeHtml(a.slug || a.id)}">${escapeHtml(a.title)}</a>
+            </h2>
+            <div class="article-meta">
+              <span>${escapeHtml(a.source_name)}</span>
+              <span>&middot;</span>
+              <span>${relativeTime(a.published_at)}</span>
+              <button class="bookmark-btn active" data-slug="${escapeHtml(a.slug || a.id)}" title="Remove bookmark">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+              </button>
+            </div>
+            ${a.summary ? `<p class="article-summary">${escapeHtml(a.summary)}</p>` : ''}
+          </div>
+        </li>`
+        )
+        .join('');
+
+      listEl.querySelectorAll<HTMLButtonElement>('.bookmark-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const slug = btn.dataset.slug;
+          if (!slug) return;
+          removeBookmark(slug);
+          const li = btn.closest('.article-item');
+          if (li) li.remove();
+          if (listEl.children.length === 0) {
+            listEl.style.display = 'none';
+            emptyEl.style.display = '';
+          }
+        });
+      });
+    }
+
+    loadBookmarks();
+  </script>
+</Base>

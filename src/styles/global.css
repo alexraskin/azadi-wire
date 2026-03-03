@@ -450,6 +450,51 @@ a:hover {
   margin-bottom: 24px;
 }
 
+/* Bookmark button */
+.bookmark-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.bookmark-btn:hover {
+  color: var(--text);
+}
+
+.bookmark-btn.active {
+  color: var(--text);
+}
+
+.bookmark-btn.active svg {
+  fill: currentColor;
+}
+
+.bookmark-btn-detail {
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.bookmark-btn-detail:hover {
+  border-color: var(--text-muted);
+}
+
+.detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 /* Empty state */
 .empty-state {
   padding: 32px 0;

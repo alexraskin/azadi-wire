@@ -108,6 +108,9 @@ function pageUrl(p: number): string {
               <span>·</span>
               <span>{relativeTime(article.published_at)}</span>
               <span class="badge">{TOPIC_LABELS[article.topic as Topic] || article.topic}</span>
+              <button class="bookmark-btn" data-slug={article.slug || article.id} title="Bookmark">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+              </button>
             </div>
             {article.summary && (
               <p class="article-summary">{article.summary}</p>
@@ -133,4 +136,8 @@ function pageUrl(p: number): string {
       )}
     </div>
   )}
+
+  <script>
+    import '../scripts/bookmarks';
+  </script>
 </Base>
