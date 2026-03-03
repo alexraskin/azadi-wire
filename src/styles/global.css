@@ -318,6 +318,66 @@ a:hover {
   color: var(--text-muted);
 }
 
+/* Share bar */
+.share-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.share-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.share-link {
+  font-size: 13px;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.share-link:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+  text-decoration: none;
+}
+
+/* Footer share */
+.footer-share {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.footer-share a {
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.footer-share a:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+  text-decoration: none;
+}
+
 /* Sources page */
 .source-list {
   list-style: none;

@@ -39,6 +39,50 @@ if (!article) {
     <a href={article.article_url} target="_blank" rel="noopener noreferrer" class="btn">
       Read Full Article ↗
     </a>
+
+    <div class="share-bar">
+      <span class="share-label">Share</span>
+      <a
+        href={`https://x.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(Astro.url.href)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="share-link"
+        title="Share on X"
+      >X</a>
+      <a
+        href={`https://t.me/share/url?url=${encodeURIComponent(Astro.url.href)}&text=${encodeURIComponent(article.title)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="share-link"
+        title="Share on Telegram"
+      >Telegram</a>
+      <a
+        href={`https://wa.me/?text=${encodeURIComponent(article.title + ' ' + Astro.url.href)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="share-link"
+        title="Share on WhatsApp"
+      >WhatsApp</a>
+      <a
+        href={`mailto:?subject=${encodeURIComponent(article.title)}&body=${encodeURIComponent(article.title + '\n\n' + Astro.url.href)}`}
+        class="share-link"
+        title="Share via email"
+      >Email</a>
+      <button class="share-link copy-link-btn" data-url={Astro.url.href} title="Copy link">Copy link</button>
+    </div>
+
     <a href="/" class="back-link">← Back to Feed</a>
   </article>
+
+  <script>
+    document.querySelector('.copy-link-btn')?.addEventListener('click', function () {
+      const btn = this as HTMLButtonElement;
+      const url = btn.dataset.url || window.location.href;
+      navigator.clipboard.writeText(url).then(() => {
+        const original = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = original; }, 2000);
+      });
+    });
+  </script>
 </Base>

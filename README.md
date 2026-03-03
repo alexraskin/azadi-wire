@@ -127,4 +127,4 @@ A cron trigger runs every 15 minutes. It:
 
 ## License
 
-MIT
+unlicense
