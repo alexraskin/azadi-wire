@@ -118,15 +118,40 @@ function extractThumbnail(xml: string): string | undefined {
   return undefined;
 }
 
+function decodeEntities(str: string): string {
+  let prev = '';
+  let current = str;
+  // Loop to handle double/triple-encoded entities
+  while (current !== prev) {
+    prev = current;
+    current = current
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&amp;/gi, '&')
+      .replace(/&quot;/gi, '"')
+      .replace(/&apos;/gi, "'")
+      .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+  }
+  return current;
+}
+
+function toPlainText(str: string): string {
+  return decodeEntities(str)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function stripTags(str: string | undefined): string | undefined {
   if (!str) return str;
-  return str.replace(/<[^>]*>/g, '').trim();
+  return toPlainText(str);
 }
 
 function extractSummary(html: string | null): string | null {
   if (!html) return null;
-  const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-  // Take first 2-3 sentences
+  const text = toPlainText(html);
+  if (!text) return null;
   const sentences = text.match(/[^.!?]+[.!?]+/g);
   if (!sentences) return text.slice(0, 300);
   return sentences.slice(0, 3).join(' ').trim();

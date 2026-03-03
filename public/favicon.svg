@@ -1,7 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <text x="1" y="26" font-size="28" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="700">A</text>
-  <style>
-    text { fill: #111; }
-    @media (prefers-color-scheme: dark) { text { fill: #e5e5e5; } }
-  </style>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 200" width="200" height="200"><rect width="200" height="200" fill="url('#gradient')"></rect><defs><linearGradient id="gradient" gradientTransform="rotate(259 0.5 0.5)"><stop offset="0%" stop-color="#ffffff"></stop><stop offset="100%" stop-color="#ffffff"></stop></linearGradient></defs><g><g fill="#201e29" transform="matrix(4.409254498714653,0,0,4.409254498714653,33.132637695159886,131.34917494104576)" stroke="#3a5a7e" stroke-width="0"><path d="M9.98 0L9.15-2.66L4.45-2.66L3.63 0L-0.03 0L5.19-14.22L8.41-14.22L13.66 0L9.98 0ZM6.80-10.23L5.27-5.30L8.33-5.30L6.80-10.23ZM23.35-14.22L25.33-5.30L26.96-14.22L30.36-14.22L27.34 0L23.79 0L21.88-8.11L20.02 0L16.47 0L13.45-14.22L16.86-14.22L18.49-5.30L20.44-14.22L23.35-14.22Z"></path></g></g></svg>
