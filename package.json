@@ -9,13 +9,14 @@
 		"astro": "astro",
 		"deploy": "npm run build && wrangler deploy",
 		"cf-typegen": "wrangler types",
-    "migrate": "wrangler d1 migrations apply azadi-wire-db --remote",
-    "migrate-local": "wrangler d1 migrations apply azadi-wire-db --local"
+		"migrate": "wrangler d1 migrations apply azadi-wire-db --remote",
+		"migrate-local": "wrangler d1 migrations apply azadi-wire-db --local"
 	},
 	"dependencies": {
 		"@astrojs/cloudflare": "^12.6.12",
 		"@astrojs/sitemap": "^3.7.0",
-		"astro": "^5.17.1"
+		"astro": "^5.17.1",
+		"he": "^1.2.0"
 	},
 	"devDependencies": {
 		"@types/node": "^25.3.3",

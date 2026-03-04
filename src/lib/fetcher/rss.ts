@@ -1,4 +1,5 @@
 import type { FeedItem } from '../types';
+import { decode } from 'he';
 
 export async function fetchRSS(feedUrl: string): Promise<FeedItem[]> {
   const items: FeedItem[] = [];
@@ -158,17 +159,9 @@ function parseWidth(tag: string): number {
 function decodeEntities(str: string): string {
   let prev = '';
   let current = str;
-  // Loop to handle double/triple-encoded entities
   while (current !== prev) {
     prev = current;
-    current = current
-      .replace(/&lt;/gi, '<')
-      .replace(/&gt;/gi, '>')
-      .replace(/&amp;/gi, '&')
-      .replace(/&quot;/gi, '"')
-      .replace(/&apos;/gi, "'")
-      .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
-      .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+    current = decode(current);
   }
   return current;
 }
