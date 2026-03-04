@@ -1,4 +1,4 @@
-import type { Article, Source, TopicCount, Topic } from './types';
+import type { Article, Source, TopicCount, Topic, DailyDigest } from './types';
 
 type D1Database = {
   prepare(query: string): D1PreparedStatement;
@@ -225,5 +225,54 @@ export async function getRecentFetcherRuns(db: D1Database, limit: number = 10): 
     .prepare('SELECT * FROM fetcher_runs ORDER BY started_at DESC LIMIT ?')
     .bind(limit)
     .all<FetcherRun>();
+  return result.results;
+}
+
+export async function digestExistsForDate(db: D1Database, date: string): Promise<boolean> {
+  const row = await db
+    .prepare('SELECT 1 FROM daily_digests WHERE digest_date = ?')
+    .bind(date)
+    .first();
+  return row !== null;
+}
+
+export async function insertDigest(db: D1Database, digest: DailyDigest): Promise<void> {
+  await db
+    .prepare(
+      `INSERT OR IGNORE INTO daily_digests (id, digest_date, overall_summary, topic_summaries, article_count, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      digest.id,
+      digest.digest_date,
+      digest.overall_summary,
+      digest.topic_summaries,
+      digest.article_count,
+      digest.created_at
+    )
+    .run();
+}
+
+export async function getDigestByDate(db: D1Database, date: string): Promise<DailyDigest | null> {
+  return db
+    .prepare('SELECT * FROM daily_digests WHERE digest_date = ?')
+    .bind(date)
+    .first<DailyDigest>();
+}
+
+export async function getRecentDigests(db: D1Database, limit: number = 7): Promise<DailyDigest[]> {
+  const result = await db
+    .prepare('SELECT * FROM daily_digests ORDER BY digest_date DESC LIMIT ?')
+    .bind(limit)
+    .all<DailyDigest>();
+  return result.results;
+}
+
+export async function getLast24hArticles(db: D1Database): Promise<Article[]> {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const result = await db
+    .prepare('SELECT * FROM articles WHERE published_at >= ? ORDER BY published_at DESC')
+    .bind(cutoff)
+    .all<Article>();
   return result.results;
 }

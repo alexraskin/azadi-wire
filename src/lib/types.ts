@@ -78,3 +78,12 @@ export interface FeedItem {
   thumbnail_url: string | null;
   published_at: string;
 }
+
+export interface DailyDigest {
+  id: string;
+  digest_date: string;
+  overall_summary: string;
+  topic_summaries: string;
+  article_count: number;
+  created_at: string;
+}

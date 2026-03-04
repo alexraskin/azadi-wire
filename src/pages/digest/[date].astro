@@ -1,0 +1,101 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getDigestByDate, getRecentDigests, getReadDB } from '../../lib/db';
+import { TOPIC_LABELS } from '../../lib/types';
+import type { Topic } from '../../lib/types';
+
+const { date } = Astro.params;
+const db = getReadDB((Astro.locals as any).runtime.env);
+
+let fetchError = false;
+let digest = null;
+let recentDigests: any[] = [];
+
+if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  return Astro.redirect('/digest');
+}
+
+try {
+  digest = await getDigestByDate(db, date);
+  recentDigests = await getRecentDigests(db, 7);
+} catch {
+  fetchError = true;
+}
+
+function formatDigestDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+}
+
+let topicSummaries: Record<string, string> = {};
+if (digest) {
+  try {
+    topicSummaries = JSON.parse(digest.topic_summaries);
+  } catch {
+    topicSummaries = {};
+  }
+}
+
+const pageTitle = digest ? `Digest – ${formatDigestDate(date)}` : 'Digest Not Found';
+---
+
+<Base title={pageTitle} description={digest ? `Daily Iran news digest for ${formatDigestDate(date)}` : undefined}>
+  {fetchError && (
+    <div class="error-state">
+      <h2>Unable to load digest</h2>
+      <p>Something went wrong. Please try again later.</p>
+      <a href="/digest" class="btn">Back to Digest</a>
+    </div>
+  )}
+
+  {!fetchError && !digest && (
+    <div class="error-state">
+      <h2>No digest for this date</h2>
+      <p>There is no digest available for {formatDigestDate(date)}.</p>
+      <a href="/digest" class="btn">Latest Digest</a>
+    </div>
+  )}
+
+  {!fetchError && digest && (
+    <div class="digest-content">
+      <h1 class="page-title">Daily Digest</h1>
+      <p class="digest-date">{formatDigestDate(digest.digest_date)}</p>
+      <p class="digest-article-count">{digest.article_count} articles summarized</p>
+
+      <section class="digest-section">
+        <h2 class="digest-section-title">Overview</h2>
+        <p class="digest-text">{digest.overall_summary}</p>
+      </section>
+
+      {Object.entries(topicSummaries).length > 0 && (
+        <div class="digest-topics">
+          {Object.entries(topicSummaries).map(([topic, summary]) => (
+            <section class="digest-section">
+              <h2 class="digest-section-title">
+                <span class="badge">{TOPIC_LABELS[topic as Topic] || topic}</span>
+              </h2>
+              <p class="digest-text">{summary}</p>
+            </section>
+          ))}
+        </div>
+      )}
+
+      {recentDigests.length > 1 && (
+        <nav class="digest-archive">
+          <h3 class="digest-archive-title">Previous Digests</h3>
+          <ul class="digest-archive-list">
+            {recentDigests
+              .filter((d) => d.digest_date !== digest!.digest_date)
+              .map((d) => (
+                <li>
+                  <a href={`/digest/${d.digest_date}`}>{formatDigestDate(d.digest_date)}</a>
+                </li>
+              ))}
+          </ul>
+        </nav>
+      )}
+
+      <a href="/digest" class="back-link">&larr; Latest Digest</a>
+    </div>
+  )}
+</Base>

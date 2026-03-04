@@ -5,6 +5,7 @@ import { fetchRSS } from './rss';
 import { scrapePage } from './scraper';
 import { categorize } from './categorizer';
 import { isDuplicate } from './dedup';
+import { maybeGenerateDigest } from './digest';
 
 export async function runFetcher(db: any, ai?: any): Promise<{ inserted: number; errors: number }> {
   const startedAt = new Date();
@@ -55,6 +56,12 @@ export async function runFetcher(db: any, ai?: any): Promise<{ inserted: number;
     await deleteOldArticles(db);
   } catch {
     errors++;
+  }
+
+  try {
+    await maybeGenerateDigest(db, ai);
+  } catch {
+    // Don't let digest failures break the fetcher
   }
 
   const finishedAt = new Date();

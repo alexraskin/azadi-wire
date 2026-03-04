@@ -538,6 +538,56 @@ a:hover {
   color: var(--text-muted);
 }
 
+/* Digest page */
+.digest-date {
+  font-size: 16px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.digest-article-count {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+
+.digest-section {
+  margin-bottom: 24px;
+}
+
+.digest-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.digest-text {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.digest-archive {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.digest-archive-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.digest-archive-list {
+  list-style: none;
+}
+
+.digest-archive-list li {
+  padding: 6px 0;
+  font-size: 14px;
+}
+
 /* Error state */
 .error-state {
   text-align: center;
