@@ -58,23 +58,6 @@ a:hover {
   outline-offset: 2px;
 }
 
-.skip-link {
-  position: absolute;
-  left: -9999px;
-  top: 0;
-  z-index: 100;
-  padding: 8px 16px;
-  background: var(--pill-active-bg);
-  color: var(--pill-active-text);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.skip-link:focus {
-  left: 16px;
-  top: 8px;
-}
-
 .container {
   max-width: 720px;
   margin: 0 auto;
