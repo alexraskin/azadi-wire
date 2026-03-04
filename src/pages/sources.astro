@@ -1,8 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getAllSources } from '../lib/db';
+import { getAllSources, getReadDB } from '../lib/db';
 
-const db = (Astro.locals as any).runtime.env.DB;
+const db = getReadDB((Astro.locals as any).runtime.env);
 const sources = await getAllSources(db);
 ---
 

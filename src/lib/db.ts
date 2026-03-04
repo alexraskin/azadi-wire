@@ -3,7 +3,16 @@ import type { Article, Source, TopicCount, Topic } from './types';
 type D1Database = {
   prepare(query: string): D1PreparedStatement;
   batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
+  withSession(bookmark?: string): D1Database;
 };
+
+export function getReadDB(env: any): D1Database {
+  return env.DB.withSession();
+}
+
+export function getWriteDB(env: any): D1Database {
+  return env.DB.withSession('first-primary');
+}
 
 type D1PreparedStatement = {
   bind(...values: unknown[]): D1PreparedStatement;

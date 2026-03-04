@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getArticles } from '../../lib/db';
+import { getArticles, getReadDB } from '../../lib/db';
 
 export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
@@ -8,7 +8,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const page = parseInt(url.searchParams.get('page') || '1', 10);
   const limit = parseInt(url.searchParams.get('limit') || '20', 10);
 
-  const db = (locals as any).runtime.env.DB;
+  const db = getReadDB((locals as any).runtime.env);
   const result = await getArticles(db, { topic, source, page, limit });
 
   return new Response(JSON.stringify(result), {

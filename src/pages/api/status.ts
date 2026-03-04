@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
-import { getRecentFetcherRuns } from '../../lib/db';
+import { getRecentFetcherRuns, getReadDB } from '../../lib/db';
 
 export const GET: APIRoute = async ({ locals }) => {
-  const db = (locals as any).runtime.env.DB;
+  const db = getReadDB((locals as any).runtime.env);
 
   const runs = await getRecentFetcherRuns(db, 20);
   const latest = runs[0] ?? null;

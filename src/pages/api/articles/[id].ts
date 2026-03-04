@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
-import { getArticleById, getArticleBySlug } from '../../../lib/db';
+import { getArticleById, getArticleBySlug, getReadDB } from '../../../lib/db';
 
 export const GET: APIRoute = async ({ params, locals }) => {
-  const db = (locals as any).runtime.env.DB;
+  const db = getReadDB((locals as any).runtime.env);
   let article = await getArticleBySlug(db, params.id!);
   if (!article) {
     article = await getArticleById(db, params.id!);

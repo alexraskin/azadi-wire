@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getArticles } from '../lib/db';
+import { getArticles, getReadDB } from '../lib/db';
 import { TOPIC_LABELS } from '../lib/types';
 import type { Topic } from '../lib/types';
 
@@ -15,7 +15,7 @@ function escapeXml(str: string): string {
 }
 
 export const GET: APIRoute = async ({ locals }) => {
-  const db = (locals as any).runtime.env.DB;
+  const db = getReadDB((locals as any).runtime.env);
   const { articles } = await getArticles(db, { limit: 50 });
 
   const items = articles

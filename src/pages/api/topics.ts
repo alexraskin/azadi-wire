@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
-import { getTopicCounts } from '../../lib/db';
+import { getTopicCounts, getReadDB } from '../../lib/db';
 
 export const GET: APIRoute = async ({ locals }) => {
-  const db = (locals as any).runtime.env.DB;
+  const db = getReadDB((locals as any).runtime.env);
   const topics = await getTopicCounts(db);
 
   return new Response(JSON.stringify({ topics }), {

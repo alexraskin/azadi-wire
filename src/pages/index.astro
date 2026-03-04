@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getArticles, searchArticles, getArticleSourceNames } from '../lib/db';
+import { getArticles, searchArticles, getArticleSourceNames, getReadDB } from '../lib/db';
 import { relativeTime } from '../lib/time';
 import { TOPICS, TOPIC_LABELS } from '../lib/types';
 import type { Topic } from '../lib/types';
@@ -11,7 +11,7 @@ const currentSource = url.searchParams.get('source') || '';
 const currentQuery = url.searchParams.get('q')?.trim() || '';
 const page = parseInt(url.searchParams.get('page') || '1', 10);
 
-const db = (Astro.locals as any).runtime.env.DB;
+const db = getReadDB((Astro.locals as any).runtime.env);
 
 const isSearching = currentQuery.length > 0;
 let articles: any[] = [];
