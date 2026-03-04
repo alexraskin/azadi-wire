@@ -77,7 +77,7 @@ export async function categorize(
 ): Promise<Topic> {
   if (ai) {
     try {
-      const response = await ai.run('workers-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+      const response = await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: buildUserPrompt(title, summary) },
@@ -88,8 +88,8 @@ export async function categorize(
       });
       const topic = parseAIResponse(response.response ?? '');
       if (topic) return topic;
-    } catch {
-      // AI unavailable — fall through to keyword matching
+    } catch (err) {
+      console.error('AI unavailable', err);
     }
   }
 
