@@ -136,9 +136,11 @@ function extractThumbnail(xml: string): string | undefined {
   }
 
   // <img src="..."> inside description/content (CDATA or raw HTML)
+  // Decode first to catch double-encoded feeds (e.g. Middle East Eye)
+  const decoded = decodeEntities(xml);
   const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*/gi;
-  while ((m = imgRegex.exec(xml)) !== null) {
-    const url = decodeEntities(m[1]);
+  while ((m = imgRegex.exec(decoded)) !== null) {
+    const url = m[1];
     if (/^https?:\/\//i.test(url)) {
       candidates.push({ url, width: parseWidth(m[0]) });
     }
