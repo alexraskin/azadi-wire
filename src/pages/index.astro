@@ -14,20 +14,31 @@ const page = parseInt(url.searchParams.get('page') || '1', 10);
 const db = (Astro.locals as any).runtime.env.DB;
 
 const isSearching = currentQuery.length > 0;
+let articles: any[] = [];
+let total = 0;
+let pages = 0;
+let sourceNames: string[] = [];
+let fetchError = false;
 
-const [result, sourceNames] = await Promise.all([
-  isSearching
-    ? searchArticles(db, currentQuery, { page, limit: 20 })
-    : getArticles(db, {
-        topic: currentTopic || undefined,
-        source: currentSource || undefined,
-        page,
-        limit: 20,
-      }),
-  getArticleSourceNames(db),
-]);
-
-const { articles, total, pages } = result;
+try {
+  const [result, names] = await Promise.all([
+    isSearching
+      ? searchArticles(db, currentQuery, { page, limit: 20 })
+      : getArticles(db, {
+          topic: currentTopic || undefined,
+          source: currentSource || undefined,
+          page,
+          limit: 20,
+        }),
+    getArticleSourceNames(db),
+  ]);
+  articles = result.articles;
+  total = result.total;
+  pages = result.pages;
+  sourceNames = names;
+} catch {
+  fetchError = true;
+}
 
 function filterUrl(opts: { topic?: string; source?: string }): string {
   const params = new URLSearchParams();
@@ -50,7 +61,15 @@ function pageUrl(p: number): string {
 ---
 
 <Base title={isSearching ? `Search: ${currentQuery}` : 'Feed'}>
-  {!isSearching && (
+  {fetchError ? (
+    <div class="error-state">
+      <h2>Something went wrong</h2>
+      <p>We couldn't load articles right now. Please try again in a moment.</p>
+      <a href="/" class="back-link">← Refresh</a>
+    </div>
+  ) : null}
+
+  {!fetchError && !isSearching && (
     <nav class="topic-filter">
       <a href={filterUrl({ topic: '' })} class:list={['topic-pill', { active: !currentTopic }]}>All</a>
       {TOPICS.filter(t => t !== 'general').map((topic) => (
@@ -64,7 +83,7 @@ function pageUrl(p: number): string {
     </nav>
   )}
 
-  {!isSearching && sourceNames.length > 0 && (
+  {!fetchError && !isSearching && sourceNames.length > 0 && (
     <nav class="source-filter">
       <a href={filterUrl({ source: '' })} class:list={['source-pill', { active: !currentSource }]}>All sources</a>
       {sourceNames.map((name) => (
@@ -78,14 +97,14 @@ function pageUrl(p: number): string {
     </nav>
   )}
 
-  {isSearching && (
+  {!fetchError && isSearching && (
     <p class="search-results-count">
       {total} result{total !== 1 ? 's' : ''} for "{currentQuery}"
       <a href="/">Clear</a>
     </p>
   )}
 
-  {articles.length === 0 ? (
+  {!fetchError && articles.length === 0 ? (
     <div class="empty-state">{isSearching ? 'No results found.' : 'No articles found.'}</div>
   ) : (
     <ul class="article-list">
@@ -97,6 +116,7 @@ function pageUrl(p: number): string {
               alt=""
               class="article-thumb"
               loading="lazy"
+              onerror="this.style.display='none';this.parentElement.classList.remove('has-thumb')"
             />
           )}
           <div class="article-body">
@@ -121,7 +141,7 @@ function pageUrl(p: number): string {
     </ul>
   )}
 
-  {pages > 1 && (
+  {!fetchError && pages > 1 && (
     <div class="pagination">
       {page > 1 ? (
         <a href={pageUrl(page - 1)}>← Previous</a>

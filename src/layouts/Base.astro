@@ -18,6 +18,12 @@ const metaDesc = description || DEFAULT_DESC;
 const metaImage = image || DEFAULT_IMAGE;
 const metaType = ogType || 'website';
 const canonicalUrl = Astro.url.href;
+const pathname = Astro.url.pathname;
+
+function isActive(href: string): boolean {
+  if (href === '/') return pathname === '/';
+  return pathname.startsWith(href);
+}
 ---
 
 <html lang="en">
@@ -45,29 +51,31 @@ const canonicalUrl = Astro.url.href;
     <title>{pageTitle}</title>
   </head>
   <body>
+    <a href="#main" class="skip-link">Skip to content</a>
     <header class="site-header">
       <div class="container">
         <a href="/" class="wordmark">Azadi Wire</a>
         <div class="header-right">
-          <form action="/" method="GET" class="search-form">
+          <form action="/" method="GET" class="search-form" role="search">
             <input
               type="search"
               name="q"
               placeholder="Search..."
+              aria-label="Search articles"
               value={Astro.url.searchParams.get('q') || ''}
               autocomplete="off"
             />
           </form>
-          <nav class="site-nav">
-            <a href="/">Feed</a>
-            <a href="/bookmarks">Bookmarks</a>
-            <a href="/sources">Sources</a>
-            <a href="/about">About</a>
+          <nav class="site-nav" aria-label="Main navigation">
+            <a href="/" aria-current={isActive('/') ? 'page' : undefined}>Feed</a>
+            <a href="/bookmarks" aria-current={isActive('/bookmarks') ? 'page' : undefined}>Bookmarks</a>
+            <a href="/sources" aria-current={isActive('/sources') ? 'page' : undefined}>Sources</a>
+            <a href="/about" aria-current={isActive('/about') ? 'page' : undefined}>About</a>
           </nav>
         </div>
       </div>
     </header>
-    <main class="container">
+    <main id="main" class="container">
       <slot />
     </main>
     <footer class="site-footer">

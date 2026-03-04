@@ -53,6 +53,28 @@ a:hover {
   text-decoration: underline;
 }
 
+:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 8px 16px;
+  background: var(--pill-active-bg);
+  color: var(--pill-active-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  left: 16px;
+  top: 8px;
+}
+
 .container {
   max-width: 720px;
   margin: 0 auto;
@@ -77,6 +99,7 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .wordmark {
@@ -106,8 +129,33 @@ a:hover {
   white-space: nowrap;
 }
 
-.site-nav a:hover {
+.site-nav a:hover,
+.site-nav a[aria-current="page"] {
   color: var(--text);
+}
+
+@media (max-width: 600px) {
+  .site-header .container {
+    gap: 10px;
+  }
+
+  .header-right {
+    order: 1;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .site-nav {
+    gap: 12px;
+  }
+
+  .search-form input[type="search"] {
+    width: 110px;
+  }
+
+  .search-form input[type="search"]:focus {
+    width: 140px;
+  }
 }
 
 /* Footer */
@@ -402,8 +450,6 @@ a:hover {
   text-decoration: none;
 }
 
-/* Footer share */
-
 /* Sources page */
 .source-list {
   list-style: none;
@@ -480,4 +526,21 @@ a:hover {
   padding: 32px 0;
   text-align: center;
   color: var(--text-muted);
+}
+
+/* Error state */
+.error-state {
+  text-align: center;
+  padding: 64px 0;
+}
+
+.error-state h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.error-state p {
+  color: var(--text-muted);
+  margin-bottom: 24px;
 }
