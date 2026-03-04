@@ -156,7 +156,11 @@ export async function searchArticles(
   const limit = Math.min(100, Math.max(1, opts.limit || 20));
   const offset = (page - 1) * limit;
 
-  const safeQuery = `"${query.replace(/"/g, '""')}"`;
+  const cleaned = query.replace(/[*"():^{}~\-]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!cleaned) {
+    return { articles: [], total: 0, page: 1, pages: 0 };
+  }
+  const safeQuery = `"${cleaned.replace(/"/g, '""')}"`;
 
   const countResult = await db
     .prepare('SELECT COUNT(*) as total FROM articles_fts WHERE articles_fts MATCH ?')
