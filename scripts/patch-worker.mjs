@@ -16,7 +16,8 @@ const _original = __astrojsSsrVirtualEntry;
 const _patched = {
   fetch: _original.fetch.bind(_original),
   async scheduled(controller, env, ctx) {
-    const request = new Request('http://localhost/api/cron');
+    const token = env.CRON_SECRET || '';
+    const request = new Request('http://localhost/api/cron?token=' + encodeURIComponent(token));
     await _original.fetch(request, env, { waitUntil: ctx.waitUntil.bind(ctx) });
   }
 };

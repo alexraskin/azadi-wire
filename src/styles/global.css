@@ -142,6 +142,16 @@ a:hover {
   gap: 12px;
 }
 
+.header-digest {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.header-digest:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
 .header-bookmarks {
   color: var(--text-muted);
   line-height: 0;
