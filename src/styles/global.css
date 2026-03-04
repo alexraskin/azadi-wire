@@ -118,9 +118,30 @@ a:hover {
   gap: 16px;
 }
 
-.site-nav {
+.nav-menu {
+  position: relative;
+}
+
+.nav-menu .site-nav {
   display: flex;
   gap: 16px;
+}
+
+.nav-toggle {
+  display: none;
+  cursor: pointer;
+  list-style: none;
+  padding: 4px;
+  color: var(--text-muted);
+  line-height: 0;
+}
+
+.nav-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.nav-toggle:hover {
+  color: var(--text);
 }
 
 .site-nav a {
@@ -135,26 +156,44 @@ a:hover {
 }
 
 @media (max-width: 600px) {
-  .site-header .container {
-    gap: 10px;
+  .nav-toggle {
+    display: block;
   }
 
-  .header-right {
-    order: 1;
-    width: 100%;
-    justify-content: space-between;
+  .nav-menu:not([open]) .site-nav {
+    display: none;
   }
 
-  .site-nav {
-    gap: 12px;
+  .nav-menu[open] .site-nav {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    flex-direction: column;
+    gap: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 4px 0;
+    min-width: 140px;
+    z-index: 10;
+  }
+
+  .nav-menu[open] .site-nav a {
+    display: block;
+    padding: 8px 16px;
+    font-size: 15px;
+  }
+
+  .nav-menu[open] .site-nav a:hover {
+    background: var(--badge-bg);
+    text-decoration: none;
   }
 
   .search-form input[type="search"] {
-    width: 110px;
+    width: 120px;
   }
 
   .search-form input[type="search"]:focus {
-    width: 140px;
+    width: 160px;
   }
 }
 
@@ -251,11 +290,40 @@ a:hover {
 }
 
 /* Source filter */
+.source-filter-wrap {
+  margin-bottom: 32px;
+}
+
+.source-filter-toggle {
+  cursor: pointer;
+  list-style: none;
+  font-size: 13px;
+  color: var(--text-muted);
+  user-select: none;
+  margin-bottom: 10px;
+}
+
+.source-filter-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.source-filter-toggle:hover {
+  color: var(--text);
+}
+
+.source-filter-toggle .chevron {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.source-filter-wrap[open] .chevron {
+  transform: rotate(180deg);
+}
+
 .source-filter {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 32px;
 }
 
 .source-pill {

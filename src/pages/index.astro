@@ -84,17 +84,22 @@ function pageUrl(p: number): string {
   )}
 
   {!fetchError && !isSearching && sourceNames.length > 0 && (
-    <nav class="source-filter">
-      <a href={filterUrl({ source: '' })} class:list={['source-pill', { active: !currentSource }]}>All sources</a>
-      {sourceNames.map((name) => (
-        <a
-          href={filterUrl({ source: name })}
-          class:list={['source-pill', { active: currentSource === name }]}
-        >
-          {name}
-        </a>
-      ))}
-    </nav>
+    <details class="source-filter-wrap" open={!!currentSource}>
+      <summary class="source-filter-toggle">
+        {currentSource ? `Source: ${currentSource}` : 'Filter by source'} <span class="chevron">▾</span>
+      </summary>
+      <nav class="source-filter">
+        <a href={filterUrl({ source: '' })} class:list={['source-pill', { active: !currentSource }]}>All sources</a>
+        {sourceNames.map((name) => (
+          <a
+            href={filterUrl({ source: name })}
+            class:list={['source-pill', { active: currentSource === name }]}
+          >
+            {name}
+          </a>
+        ))}
+      </nav>
+    </details>
   )}
 
   {!fetchError && isSearching && (
