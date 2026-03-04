@@ -39,6 +39,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
   });
 
   if (res.ok) {
+    const RESEND_FROM_EMAIL: string = env.RESEND_FROM_EMAIL || 'Azadi Wire <digest@azadiwire.org>';
+    await fetch('https://api.resend.com/emails/batch', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify([
+        {
+          from: RESEND_FROM_EMAIL,
+          to: [email],
+          subject: 'Welcome to the Azadi Wire Daily Digest',
+          html: `<p>Thanks for subscribing to the <strong>Azadi Wire Daily Digest</strong>.</p>
+<p>You'll receive a morning roundup of top Iran news stories every day.</p>
+<p>You can unsubscribe at any time from our <a href="https://azadiwire.org/terms">Terms</a> page.</p>`,
+        },
+      ]),
+    }).catch(() => {/* best-effort — don't block redirect on email failure */});
+
     const origin = new URL(request.url).origin;
     return Response.redirect(`${origin}/subscribe?success=true`, 303);
   }
