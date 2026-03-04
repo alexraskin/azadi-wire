@@ -7,7 +7,7 @@ import { categorize } from './categorizer';
 import { isDuplicate } from './dedup';
 import { maybeGenerateDigest } from './digest';
 
-export async function runFetcher(db: any, ai?: any): Promise<{ inserted: number; errors: number }> {
+export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ inserted: number; errors: number }> {
   const startedAt = new Date();
   let inserted = 0;
   let errors = 0;
@@ -59,7 +59,7 @@ export async function runFetcher(db: any, ai?: any): Promise<{ inserted: number;
   }
 
   try {
-    await maybeGenerateDigest(db, ai);
+    await maybeGenerateDigest(db, ai, env);
   } catch {
     // Don't let digest failures break the fetcher
   }

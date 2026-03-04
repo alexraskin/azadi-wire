@@ -13,7 +13,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     }
   }
 
-  const result = await runFetcher(getWriteDB(env), env.AI);
+  const result = await runFetcher(getWriteDB(env), env.AI, env);
 
   return new Response(JSON.stringify(result), {
     headers: { 'Content-Type': 'application/json' },

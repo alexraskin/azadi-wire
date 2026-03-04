@@ -2,6 +2,12 @@ import type { Article, DailyDigest, Topic } from '../types';
 import { TOPIC_LABELS, TOPICS } from '../types';
 import { digestExistsForDate, getLast24hArticles, insertDigest } from '../db';
 
+interface DigestEnv {
+  RESEND_API_KEY?: string;
+  RESEND_AUDIENCE_ID?: string;
+  RESEND_FROM_EMAIL?: string;
+}
+
 const SYSTEM_PROMPT =
   'You are a news editor summarising the day\'s Iran-related news. ' +
   'Given a list of article headlines and summaries, produce a JSON object with two keys:\n' +
@@ -84,9 +90,64 @@ function buildFallbackDigest(articles: Article[]): DigestResponse {
   return { overall, topics };
 }
 
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+}
+
+function buildDigestEmailHtml(digest: DailyDigest): string {
+  const date = formatDate(digest.digest_date);
+  const topics: Record<string, string> = JSON.parse(digest.topic_summaries);
+
+  let topicHtml = '';
+  for (const [topic, summary] of Object.entries(topics)) {
+    const label = TOPIC_LABELS[topic as Topic] || topic;
+    topicHtml += `<tr><td style="padding:12px 0;border-bottom:1px solid #e5e5e5"><strong>${label}</strong><br>${summary}</td></tr>`;
+  }
+
+  return `
+<div style="max-width:600px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#111;line-height:1.6">
+  <h2 style="margin:0 0 4px">Azadi Wire Daily Digest</h2>
+  <p style="color:#666;margin:0 0 20px;font-size:14px">${date} &middot; ${digest.article_count} articles</p>
+  <p>${digest.overall_summary}</p>
+  <table style="width:100%;border-collapse:collapse;margin:24px 0">${topicHtml}</table>
+  <p style="margin:24px 0 0"><a href="https://azadiwire.org/digest/${digest.digest_date}" style="color:#111;font-weight:600">Read full digest on the web &rarr;</a></p>
+  <hr style="border:none;border-top:1px solid #e5e5e5;margin:24px 0">
+  <p style="font-size:12px;color:#999">You're receiving this because you subscribed to the Azadi Wire Daily Digest.<br>
+  <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#999">Unsubscribe</a></p>
+</div>`.trim();
+}
+
+async function sendDigestBroadcast(env: DigestEnv, digest: DailyDigest): Promise<void> {
+  if (!env.RESEND_API_KEY || !env.RESEND_AUDIENCE_ID) return;
+
+  const from = env.RESEND_FROM_EMAIL || 'Azadi Wire <digest@azadiwire.org>';
+  const date = formatDate(digest.digest_date);
+
+  const res = await fetch('https://api.resend.com/broadcasts', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      audienceId: env.RESEND_AUDIENCE_ID,
+      from,
+      subject: `Azadi Wire Daily Digest — ${date}`,
+      html: buildDigestEmailHtml(digest),
+      send: true,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    console.error('Failed to send digest broadcast', res.status, body);
+  }
+}
+
 const MIN_ARTICLES_FOR_DIGEST = 3;
 
-export async function maybeGenerateDigest(db: any, ai?: any): Promise<boolean> {
+export async function maybeGenerateDigest(db: any, ai?: any, env?: DigestEnv): Promise<boolean> {
   const today = new Date().toISOString().slice(0, 10);
 
   const exists = await digestExistsForDate(db, today);
@@ -130,5 +191,14 @@ export async function maybeGenerateDigest(db: any, ai?: any): Promise<boolean> {
   };
 
   await insertDigest(db, digest);
+
+  if (env) {
+    try {
+      await sendDigestBroadcast(env, digest);
+    } catch (err) {
+      console.error('Digest email broadcast failed', err);
+    }
+  }
+
   return true;
 }

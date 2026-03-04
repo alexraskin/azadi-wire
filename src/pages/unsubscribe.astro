@@ -1,0 +1,33 @@
+---
+import Base from '../layouts/Base.astro';
+
+const success = Astro.url.searchParams.get('success') === 'true';
+const error = Astro.url.searchParams.get('error');
+
+const errorMessages: Record<string, string> = {
+  missing: 'No email address provided.',
+  server: 'Something went wrong. Please try again later.',
+};
+---
+
+<Base title="Unsubscribe" description="Unsubscribe from the Azadi Wire daily digest.">
+  <div class="subscribe-page">
+    <h1 class="page-title">Unsubscribe</h1>
+
+    {success ? (
+      <div class="subscribe-success">
+        <p>You have been unsubscribed. You will no longer receive the daily digest.</p>
+      </div>
+    ) : (
+      <div class="about-content">
+        {error && (
+          <p class="subscribe-error">{errorMessages[error] ?? errorMessages.server}</p>
+        )}
+        <p>
+          Sorry to see you go. If you change your mind, you can always
+          <a href="/subscribe">re-subscribe</a>.
+        </p>
+      </div>
+    )}
+  </div>
+</Base>

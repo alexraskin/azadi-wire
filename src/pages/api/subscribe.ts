@@ -40,6 +40,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   if (res.ok) {
     const RESEND_FROM_EMAIL: string = env.RESEND_FROM_EMAIL || 'Azadi Wire <digest@azadiwire.org>';
+    const unsubscribeUrl = `https://azadiwire.org/api/unsubscribe?email=${encodeURIComponent(email)}`;
     await fetch('https://api.resend.com/emails/batch', {
       method: 'POST',
       headers: {
@@ -51,9 +52,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
           from: RESEND_FROM_EMAIL,
           to: [email],
           subject: 'Welcome to the Azadi Wire Daily Digest',
+          headers: {
+            'List-Unsubscribe': `<${unsubscribeUrl}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
           html: `<p>Thanks for subscribing to the <strong>Azadi Wire Daily Digest</strong>.</p>
 <p>You'll receive a morning roundup of top Iran news stories every day.</p>
-<p>You can unsubscribe at any time from our <a href="https://azadiwire.org/terms">Terms</a> page.</p>`,
+<p>You can <a href="${unsubscribeUrl}">unsubscribe</a> at any time.</p>`,
         },
       ]),
     }).catch(() => {/* best-effort — don't block redirect on email failure */});
