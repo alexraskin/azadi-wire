@@ -23,6 +23,11 @@ export const GET: APIRoute = async ({ locals }) => {
       avg_duration_ms: avgDuration,
       runs,
     }),
-    { headers: { 'Content-Type': 'application/json' } }
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=60, s-maxage=120',
+      },
+    }
   );
 };

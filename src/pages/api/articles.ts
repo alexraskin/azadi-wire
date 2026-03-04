@@ -12,6 +12,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const result = await getArticles(db, { topic, source, page, limit });
 
   return new Response(JSON.stringify(result), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=60, s-maxage=120',
+    },
   });
 };

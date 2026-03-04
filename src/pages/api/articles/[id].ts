@@ -16,6 +16,9 @@ export const GET: APIRoute = async ({ params, locals }) => {
   }
 
   return new Response(JSON.stringify(article), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=300, s-maxage=600',
+    },
   });
 };

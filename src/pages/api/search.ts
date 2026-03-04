@@ -17,6 +17,9 @@ export const GET: APIRoute = async ({ url, locals }) => {
   const result = await searchArticles(db, query, { page, limit });
 
   return new Response(JSON.stringify(result), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=60, s-maxage=120',
+    },
   });
 };

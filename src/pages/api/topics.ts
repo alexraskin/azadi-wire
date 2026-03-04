@@ -6,6 +6,9 @@ export const GET: APIRoute = async ({ locals }) => {
   const topics = await getTopicCounts(db);
 
   return new Response(JSON.stringify({ topics }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=120, s-maxage=300',
+    },
   });
 };
