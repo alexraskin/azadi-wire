@@ -77,12 +77,14 @@ export async function categorize(
 ): Promise<Topic> {
   if (ai) {
     try {
-      const response = await ai.run('@cf/meta/llama-3.1-8b-instruct', {
+      const response = await ai.run('workers-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: buildUserPrompt(title, summary) },
         ],
         max_tokens: 20,
+      }, {
+        gateway: { id: 'azadiwire' },
       });
       const topic = parseAIResponse(response.response ?? '');
       if (topic) return topic;
