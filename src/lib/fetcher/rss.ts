@@ -102,20 +102,57 @@ function extractLink(xml: string): string | undefined {
   return linkTag;
 }
 
-function extractThumbnail(xml: string): string | undefined {
-  // <media:thumbnail url="...">
-  const media = /<media:thumbnail[^>]+url=["']([^"']+)["']/i.exec(xml);
-  if (media) return media[1];
+interface ImageCandidate {
+  url: string;
+  width: number;
+}
 
-  // <media:content url="...">
-  const content = /<media:content[^>]+url=["']([^"']+)["']/i.exec(xml);
-  if (content) return content[1];
+function extractThumbnail(xml: string): string | undefined {
+  const candidates: ImageCandidate[] = [];
+
+  // <media:thumbnail url="..." width="...">
+  const thumbRegex = /<media:thumbnail[^>]+url=["']([^"']+)["'][^>]*/gi;
+  let m: RegExpExecArray | null;
+  while ((m = thumbRegex.exec(xml)) !== null) {
+    candidates.push({ url: m[1], width: parseWidth(m[0]) });
+  }
+
+  // <media:content url="..." width="..." medium="image"> or type="image/..."
+  const mediaRegex = /<media:content[^>]+url=["']([^"']+)["'][^>]*/gi;
+  while ((m = mediaRegex.exec(xml)) !== null) {
+    const tag = m[0];
+    const isImage = /(?:medium=["']image["']|type=["']image\/)/i.test(tag);
+    const url = m[1];
+    if (isImage || /\.(jpe?g|png|webp|gif)/i.test(url)) {
+      candidates.push({ url, width: parseWidth(tag) });
+    }
+  }
 
   // <enclosure url="..." type="image/...">
-  const enclosure = /<enclosure[^>]+url=["']([^"']+)["'][^>]+type=["']image\//i.exec(xml);
-  if (enclosure) return enclosure[1];
+  const encRegex = /<enclosure[^>]+url=["']([^"']+)["'][^>]+type=["']image\/[^>]*/gi;
+  while ((m = encRegex.exec(xml)) !== null) {
+    candidates.push({ url: m[1], width: parseWidth(m[0]) });
+  }
 
-  return undefined;
+  // <img src="..."> inside description/content (CDATA or raw HTML)
+  const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*/gi;
+  while ((m = imgRegex.exec(xml)) !== null) {
+    const url = decodeEntities(m[1]);
+    if (/^https?:\/\//i.test(url)) {
+      candidates.push({ url, width: parseWidth(m[0]) });
+    }
+  }
+
+  if (candidates.length === 0) return undefined;
+
+  // Pick the largest by width, or first if no widths specified
+  candidates.sort((a, b) => b.width - a.width);
+  return candidates[0].url;
+}
+
+function parseWidth(tag: string): number {
+  const w = /width=["']?(\d+)/i.exec(tag);
+  return w ? parseInt(w[1], 10) : 0;
 }
 
 function decodeEntities(str: string): string {
