@@ -26,7 +26,8 @@
 		}
 	],
 	"vars": {
-		"RESEND_AUDIENCE_ID": ""
+		"RESEND_AUDIENCE_ID": "",
+		"RESEND_FROM_EMAIL": "Azadi Wire <digest@azadiwire.org>"
 	},
 	"triggers": {
 		"crons": ["*/15 * * * *"]
