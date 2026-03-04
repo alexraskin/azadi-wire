@@ -56,27 +56,19 @@ function isActive(href: string): boolean {
       <div class="container">
         <a href="/" class="wordmark">Azadi Wire</a>
         <div class="header-right">
+          <a href="/bookmarks" class="header-bookmarks" aria-label="Bookmarks">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+          </a>
           <form action="/" method="GET" class="search-form" role="search">
-            <input
-              type="search"
-              name="q"
-              placeholder="Search..."
-              aria-label="Search articles"
-              value={Astro.url.searchParams.get('q') || ''}
-              autocomplete="off"
+          <input
+            type="search"
+            name="q"
+            placeholder="Search..."
+            aria-label="Search articles"
+            value={Astro.url.searchParams.get('q') || ''}
+            autocomplete="off"
             />
           </form>
-          <details class="nav-menu">
-            <summary class="nav-toggle" aria-label="Menu">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            </summary>
-            <nav class="site-nav" aria-label="Main navigation">
-              <a href="/" aria-current={isActive('/') ? 'page' : undefined}>Feed</a>
-              <a href="/bookmarks" aria-current={isActive('/bookmarks') ? 'page' : undefined}>Bookmarks</a>
-              <a href="/sources" aria-current={isActive('/sources') ? 'page' : undefined}>Sources</a>
-              <a href="/about" aria-current={isActive('/about') ? 'page' : undefined}>About</a>
-            </nav>
-          </details>
         </div>
       </div>
     </header>
@@ -85,6 +77,12 @@ function isActive(href: string): boolean {
     </main>
     <footer class="site-footer">
       <div class="container">
+        <nav class="footer-nav" aria-label="Main navigation">
+          <a href="/" aria-current={isActive('/') ? 'page' : undefined}>Feed</a>
+          <a href="/bookmarks" aria-current={isActive('/bookmarks') ? 'page' : undefined}>Bookmarks</a>
+          <a href="/sources" aria-current={isActive('/sources') ? 'page' : undefined}>Sources</a>
+          <a href="/about" aria-current={isActive('/about') ? 'page' : undefined}>About</a>
+        </nav>
         <p>Azadi Wire – Independent Iran news aggregation</p>
         <p class="footer-links">
           <a href="/feed.xml">RSS</a>

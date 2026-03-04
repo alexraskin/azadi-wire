@@ -39,7 +39,12 @@ if (!fetchError && !article) {
     </div>
   ) : (
     <article>
-      <h1 class="article-detail-title">{article.title}</h1>
+      <div class="article-detail-header">
+        <h1 class="article-detail-title">{article.title}</h1>
+        <button class="bookmark-btn bookmark-btn-title" data-slug={article.slug || article.id} title="Bookmark">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+        </button>
+      </div>
       <div class="article-detail-meta">
         <span>{article.source_name}</span>
         <span>·</span>
@@ -64,10 +69,6 @@ if (!fetchError && !article) {
         <a href={article.article_url} target="_blank" rel="noopener noreferrer" class="btn">
           Read Full Article ↗
         </a>
-        <button class="bookmark-btn bookmark-btn-detail" data-slug={article.slug || article.id} title="Bookmark">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-          <span class="bookmark-label">Bookmark</span>
-        </button>
       </div>
 
       <div class="share-bar">
