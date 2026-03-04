@@ -18,6 +18,7 @@ src/
     digest.astro            # Latest daily AI digest
     digest/[date].astro     # Archived digest by date
     article/[slug].astro    # Article detail page
+    subscribe.astro         # Daily digest email sign-up page
     api/
       articles.ts           # GET /api/articles
       articles/[id].ts      # GET /api/articles/:id
@@ -27,6 +28,7 @@ src/
       status.ts             # GET /api/status
       feed.xml.ts           # GET /feed.xml
       cron.ts               # GET /api/cron (fetcher trigger)
+      subscribe.ts          # POST /api/subscribe (Resend contact creation)
   lib/
     db.ts                   # D1 query helpers + read/write session wrappers
     time.ts                 # Relative time formatting
@@ -128,6 +130,21 @@ A cron trigger runs every 15 minutes. It:
 - The Iran Primer (USIP)
 - Iran Front Page
 
+## Daily Digest (Newsletter)
+
+Users can subscribe to a daily email digest at `/subscribe`. Subscriptions are managed via [Resend](https://resend.com).
+
+### Required secrets / vars
+
+Set these in Cloudflare (Workers → Settings → Variables & Secrets):
+
+| Name | Type | Description |
+| :--- | :--- | :--- |
+| `RESEND_API_KEY` | Secret | Your Resend API key |
+| `RESEND_AUDIENCE_ID` | Var | The Resend audience ID to add contacts to |
+
+`RESEND_AUDIENCE_ID` can also be set in `wrangler.jsonc` under `vars`. `RESEND_API_KEY` must be added as an encrypted secret via `wrangler secret put RESEND_API_KEY` or through the Cloudflare dashboard.
+
 ## API
 
 | Endpoint | Description |
@@ -140,6 +157,7 @@ A cron trigger runs every 15 minutes. It:
 | `GET /api/status` | Fetcher run history |
 | `GET /api/cron` | Manually trigger the fetcher |
 | `GET /feed.xml` | RSS feed |
+| `POST /api/subscribe` | Subscribe an email to the daily digest |
 
 ## License
 
