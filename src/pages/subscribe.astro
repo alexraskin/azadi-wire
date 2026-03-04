@@ -1,0 +1,53 @@
+---
+import Base from '../layouts/Base.astro';
+
+const success = Astro.url.searchParams.get('success') === 'true';
+const error = Astro.url.searchParams.get('error');
+
+const errorMessages: Record<string, string> = {
+  invalid: 'Please enter a valid email address.',
+  exists: 'That email is already subscribed.',
+  server: 'Something went wrong. Please try again later.',
+};
+---
+
+<Base
+  title="Daily Digest"
+  description="Subscribe to the Azadi Wire daily digest — a morning roundup of the top Iran news stories delivered to your inbox."
+>
+  <div class="subscribe-page">
+    <h1 class="page-title">Daily Digest</h1>
+    <div class="about-content">
+      <p>
+        Get a curated morning roundup of the top Iran news stories delivered to
+        your inbox every day. No spam, no tracking — just the news.
+      </p>
+    </div>
+
+    {success ? (
+      <div class="subscribe-success">
+        <p>You're subscribed. Check your inbox for a confirmation email.</p>
+      </div>
+    ) : (
+      <form class="subscribe-form" action="/api/subscribe" method="POST">
+        {error && (
+          <p class="subscribe-error">{errorMessages[error] ?? errorMessages.server}</p>
+        )}
+        <div class="subscribe-row">
+          <input
+            type="email"
+            name="email"
+            placeholder="you@example.com"
+            required
+            autocomplete="email"
+            aria-label="Email address"
+          />
+          <button type="submit" class="btn">Subscribe</button>
+        </div>
+        <p class="subscribe-note">
+          You can unsubscribe at any time. See our <a href="/terms">Terms</a>.
+        </p>
+      </form>
+    )}
+  </div>
+</Base>

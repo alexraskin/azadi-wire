@@ -25,6 +25,9 @@
 			"migrations_dir": "migrations"
 		}
 	],
+	"vars": {
+		"RESEND_AUDIENCE_ID": ""
+	},
 	"triggers": {
 		"crons": ["*/15 * * * *"]
 	},
