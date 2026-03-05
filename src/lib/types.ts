@@ -26,7 +26,7 @@ export interface Source {
   id: string;
   name: string;
   url: string;
-  type: 'rss' | 'scrape';
+  type: 'rss' | 'scrape' | 'youtube';
   active: number;
 }
 
@@ -77,6 +77,18 @@ export interface FeedItem {
   article_url: string;
   thumbnail_url: string | null;
   published_at: string;
+}
+
+export interface Video {
+  id: string;
+  video_id: string;
+  title: string;
+  description: string | null;
+  channel_name: string;
+  channel_id: string;
+  thumbnail_url: string | null;
+  published_at: string;
+  fetched_at: string;
 }
 
 export interface DailyDigest {

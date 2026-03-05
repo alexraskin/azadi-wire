@@ -1,11 +1,12 @@
-import type { Article, Source } from '../types';
+import type { Article, Source, Video } from '../types';
 import { slugify } from '../types';
-import { getActiveSources, articleUrlExists, getTodayTitles, insertArticle, deleteOldArticles, insertFetcherRun } from '../db';
+import { getActiveSources, articleUrlExists, getTodayTitles, insertArticle, deleteOldArticles, insertFetcherRun, videoIdExists, insertVideo, deleteOldVideos } from '../db';
 import { fetchRSS } from './rss';
 import { scrapePage } from './scraper';
 import { categorize } from './categorizer';
 import { isDuplicate } from './dedup';
 import { maybeGenerateDigest } from './digest';
+import { fetchYouTubeFeed } from './youtube';
 
 export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ inserted: number; errors: number }> {
   const startedAt = new Date();
@@ -14,10 +15,12 @@ export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ insert
 
   try {
     const sources = await getActiveSources(db);
+    const articleSources = sources.filter((s) => s.type !== 'youtube');
+    const youtubeSources = sources.filter((s) => s.type === 'youtube');
     const existingTitles = await getTodayTitles(db);
     const now = new Date().toISOString();
 
-    for (const source of sources) {
+    for (const source of articleSources) {
       try {
         const items = await fetchItemsForSource(source);
 
@@ -53,7 +56,34 @@ export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ insert
       }
     }
 
+    for (const source of youtubeSources) {
+      try {
+        const items = await fetchYouTubeFeed(source.url);
+        for (const item of items) {
+          const exists = await videoIdExists(db, item.video_id);
+          if (exists) continue;
+
+          const video: Video = {
+            id: crypto.randomUUID(),
+            video_id: item.video_id,
+            title: item.title,
+            description: item.description,
+            channel_name: item.channel_name,
+            channel_id: item.channel_id,
+            thumbnail_url: item.thumbnail_url,
+            published_at: item.published_at,
+            fetched_at: now,
+          };
+
+          await insertVideo(db, video);
+        }
+      } catch {
+        errors++;
+      }
+    }
+
     await deleteOldArticles(db);
+    await deleteOldVideos(db);
   } catch {
     errors++;
   }

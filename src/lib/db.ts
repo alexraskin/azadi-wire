@@ -1,4 +1,4 @@
-import type { Article, Source, TopicCount, Topic, DailyDigest } from './types';
+import type { Article, Source, TopicCount, Topic, DailyDigest, Video } from './types';
 
 type D1Database = {
   prepare(query: string): D1PreparedStatement;
@@ -266,6 +266,83 @@ export async function getRecentDigests(db: D1Database, limit: number = 7): Promi
     .bind(limit)
     .all<DailyDigest>();
   return result.results;
+}
+
+export async function videoIdExists(db: D1Database, videoId: string): Promise<boolean> {
+  const row = await db
+    .prepare('SELECT 1 FROM videos WHERE video_id = ?')
+    .bind(videoId)
+    .first();
+  return row !== null;
+}
+
+export async function insertVideo(db: D1Database, video: Video): Promise<void> {
+  await db
+    .prepare(
+      `INSERT OR IGNORE INTO videos (id, video_id, title, description, channel_name, channel_id, thumbnail_url, published_at, fetched_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      video.id,
+      video.video_id,
+      video.title,
+      video.description,
+      video.channel_name,
+      video.channel_id,
+      video.thumbnail_url,
+      video.published_at,
+      video.fetched_at
+    )
+    .run();
+}
+
+export async function getVideos(
+  db: D1Database,
+  opts: { channel?: string; page?: number; limit?: number } = {}
+): Promise<{ videos: Video[]; total: number; page: number; pages: number }> {
+  const page = Math.max(1, opts.page || 1);
+  const limit = Math.min(50, Math.max(1, opts.limit || 12));
+  const offset = (page - 1) * limit;
+
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+
+  if (opts.channel) {
+    conditions.push('channel_name = ?');
+    params.push(opts.channel);
+  }
+
+  const where = conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : '';
+
+  const countResult = await db
+    .prepare('SELECT COUNT(*) as total FROM videos' + where)
+    .bind(...params)
+    .first<{ total: number }>();
+  const total = countResult?.total || 0;
+
+  const listResult = await db
+    .prepare('SELECT * FROM videos' + where + ' ORDER BY published_at DESC LIMIT ? OFFSET ?')
+    .bind(...params, limit, offset)
+    .all<Video>();
+
+  return {
+    videos: listResult.results,
+    total,
+    page,
+    pages: Math.ceil(total / limit),
+  };
+}
+
+export async function getVideoChannelNames(db: D1Database): Promise<string[]> {
+  const result = await db
+    .prepare('SELECT DISTINCT channel_name FROM videos ORDER BY channel_name')
+    .all<{ channel_name: string }>();
+  return result.results.map((r) => r.channel_name);
+}
+
+export async function deleteOldVideos(db: D1Database, daysOld: number = 30): Promise<void> {
+  const cutoff = new Date(Date.now() - daysOld * 86400000).toISOString();
+  await db.prepare('DELETE FROM videos WHERE published_at < ?').bind(cutoff).run();
 }
 
 export async function getLast24hArticles(db: D1Database): Promise<Article[]> {
