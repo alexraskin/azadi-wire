@@ -124,24 +124,36 @@ async function sendDigestBroadcast(env: DigestEnv, digest: DailyDigest): Promise
   const from = env.RESEND_FROM_EMAIL || 'Azadi Wire <digest@azadiwire.org>';
   const date = formatDate(digest.digest_date);
 
-  const res = await fetch('https://api.resend.com/broadcasts', {
+  const createRes = await fetch('https://api.resend.com/broadcasts', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${env.RESEND_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      audienceId: env.RESEND_AUDIENCE_ID,
+      audience_id: env.RESEND_AUDIENCE_ID,
       from,
       subject: `Azadi Wire Daily Digest — ${date}`,
       html: buildDigestEmailHtml(digest),
-      send: true,
     }),
   });
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    console.error('Failed to send digest broadcast', res.status, body);
+  if (!createRes.ok) {
+    const body = await createRes.text().catch(() => '');
+    console.error('Failed to create digest broadcast', createRes.status, body);
+    return;
+  }
+
+  const { id } = await createRes.json() as { id: string };
+
+  const sendRes = await fetch(`https://api.resend.com/broadcasts/${id}/send`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}` },
+  });
+
+  if (!sendRes.ok) {
+    const body = await sendRes.text().catch(() => '');
+    console.error('Failed to send digest broadcast', sendRes.status, body);
   }
 }
 
