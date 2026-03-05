@@ -163,9 +163,13 @@ async function sendDigestBroadcast(env: DigestEnv, digest: DailyDigest): Promise
 }
 
 const MIN_ARTICLES_FOR_DIGEST = 3;
+const DIGEST_HOUR_UTC = 18;
 
 export async function maybeGenerateDigest(db: any, ai?: any, env?: DigestEnv): Promise<boolean> {
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  if (now.getUTCHours() < DIGEST_HOUR_UTC) return false;
+
+  const today = now.toISOString().slice(0, 10);
 
   const exists = await digestExistsForDate(db, today);
   if (exists) return false;
