@@ -6,11 +6,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const env = (locals as any).runtime.env;
 
   const secret = env.CRON_SECRET;
-  if (secret) {
-    const token = new URL(request.url).searchParams.get('token');
-    if (token !== secret) {
-      return new Response('Unauthorized', { status: 401 });
-    }
+  const token = new URL(request.url).searchParams.get('token');
+  if (!secret || token !== secret) {
+    return new Response('Unauthorized', { status: 401 });
   }
 
   const result = await runFetcher(getWriteDB(env), env.AI, env);

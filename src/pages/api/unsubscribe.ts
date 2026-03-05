@@ -6,9 +6,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const RESEND_AUDIENCE_ID: string | undefined = env.RESEND_AUDIENCE_ID;
 
   const url = new URL(request.url);
-  const email = url.searchParams.get('email');
+  const email = url.searchParams.get('email')?.trim().slice(0, 254) || '';
 
-  if (!email) {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return Response.redirect(`${url.origin}/unsubscribe?error=missing`, 303);
   }
 
@@ -37,9 +37,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const RESEND_AUDIENCE_ID: string | undefined = env.RESEND_AUDIENCE_ID;
 
   const url = new URL(request.url);
-  const email = url.searchParams.get('email');
+  const email = url.searchParams.get('email')?.trim().slice(0, 254) || '';
 
-  if (!email || !RESEND_API_KEY || !RESEND_AUDIENCE_ID) {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !RESEND_API_KEY || !RESEND_AUDIENCE_ID) {
     return new Response('', { status: 400 });
   }
 
