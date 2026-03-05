@@ -30,6 +30,7 @@ export async function fetchYouTubeFeed(feedUrl: string): Promise<YouTubeItem[]> 
       const videoId = extractTag(entry, 'yt:videoId');
       const title = stripTags(extractTag(entry, 'title'));
       if (!videoId || !title) continue;
+      if (isNonLatin(title)) continue;
 
       const published = extractTag(entry, 'published') || '';
       const description = extractDescription(entry);
@@ -50,6 +51,12 @@ export async function fetchYouTubeFeed(feedUrl: string): Promise<YouTubeItem[]> 
   }
 
   return items;
+}
+
+function isNonLatin(text: string): boolean {
+  const nonLatin = text.match(/[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/g);
+  if (!nonLatin) return false;
+  return nonLatin.length / text.replace(/\s/g, '').length > 0.3;
 }
 
 function matchAll(text: string, regex: RegExp): string[] {

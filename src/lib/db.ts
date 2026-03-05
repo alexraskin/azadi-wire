@@ -340,6 +340,14 @@ export async function getVideoChannelNames(db: D1Database): Promise<string[]> {
   return result.results.map((r) => r.channel_name);
 }
 
+export async function getLatestVideos(db: D1Database, limit: number = 4): Promise<Video[]> {
+  const result = await db
+    .prepare('SELECT * FROM videos ORDER BY published_at DESC LIMIT ?')
+    .bind(limit)
+    .all<Video>();
+  return result.results;
+}
+
 export async function deleteOldVideos(db: D1Database, daysOld: number = 30): Promise<void> {
   const cutoff = new Date(Date.now() - daysOld * 86400000).toISOString();
   await db.prepare('DELETE FROM videos WHERE published_at < ?').bind(cutoff).run();

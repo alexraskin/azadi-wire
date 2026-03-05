@@ -1,9 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getArticles, searchArticles, getArticleSourceNames, getReadDB } from '../lib/db';
+import { getArticles, searchArticles, getArticleSourceNames, getLatestVideos, getReadDB } from '../lib/db';
 import { relativeTime } from '../lib/time';
 import { TOPICS, TOPIC_LABELS } from '../lib/types';
-import type { Topic } from '../lib/types';
+import type { Topic, Video } from '../lib/types';
 
 const url = Astro.url;
 const currentTopic = url.searchParams.get('topic') || '';
@@ -18,10 +18,13 @@ let articles: any[] = [];
 let total = 0;
 let pages = 0;
 let sourceNames: string[] = [];
+let latestVideos: Video[] = [];
 let fetchError = false;
 
+const showVideos = !isSearching && !currentTopic && !currentSource && page === 1;
+
 try {
-  const [result, names] = await Promise.all([
+  const [result, names, videos] = await Promise.all([
     isSearching
       ? searchArticles(db, currentQuery, { page, limit: 20 })
       : getArticles(db, {
@@ -31,11 +34,13 @@ try {
           limit: 20,
         }),
     getArticleSourceNames(db),
+    showVideos ? getLatestVideos(db, 4) : Promise.resolve([]),
   ]);
   articles = result.articles;
   total = result.total;
   pages = result.pages;
   sourceNames = names;
+  latestVideos = videos;
 } catch {
   fetchError = true;
 }
@@ -107,6 +112,40 @@ function pageUrl(p: number): string {
       {total} result{total !== 1 ? 's' : ''} for "{currentQuery}"
       <a href="/">Clear</a>
     </p>
+  )}
+
+  {!fetchError && latestVideos.length > 0 && (
+    <section class="feed-videos">
+      <div class="feed-videos-header">
+        <h2 class="feed-videos-title">Latest Videos</h2>
+        <a href="/videos" class="feed-videos-more">View all →</a>
+      </div>
+      <div class="feed-videos-grid">
+        {latestVideos.map((video) => (
+          <a
+            href={`https://www.youtube.com/watch?v=${video.video_id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="feed-video-card"
+          >
+            <div class="video-thumb-wrap">
+              <img
+                src={video.thumbnail_url}
+                alt=""
+                class="video-thumb"
+                loading="lazy"
+                onerror="this.style.display='none'"
+              />
+              <div class="video-play-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+            <span class="feed-video-title">{video.title}</span>
+            <span class="feed-video-channel">{video.channel_name}</span>
+          </a>
+        ))}
+      </div>
+    </section>
   )}
 
   {!fetchError && articles.length === 0 ? (
