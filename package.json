@@ -16,7 +16,8 @@
 		"@astrojs/cloudflare": "^12.6.12",
 		"@astrojs/sitemap": "^3.7.0",
 		"astro": "^5.17.1",
-		"he": "^1.2.0"
+		"he": "^1.2.0",
+		"resend": "^6.9.3"
 	},
 	"devDependencies": {
 		"@types/node": "^25.3.3",

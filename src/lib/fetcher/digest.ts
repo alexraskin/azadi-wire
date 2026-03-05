@@ -1,12 +1,7 @@
 import type { Article, DailyDigest, Topic } from '../types';
 import { TOPIC_LABELS, TOPICS } from '../types';
-import { digestExistsForDate, getLast24hArticles, insertDigest } from '../db';
-
-interface DigestEnv {
-  RESEND_API_KEY?: string;
-  RESEND_AUDIENCE_ID?: string;
-  RESEND_FROM_EMAIL?: string;
-}
+import { digestExistsForDate, getTodayArticles, insertDigest } from '../db';
+import { getResendClient, type ResendEnv } from '../resend';
 
 const SYSTEM_PROMPT =
   'You are a news editor summarising the day\'s Iran-related news. ' +
@@ -119,53 +114,34 @@ function buildDigestEmailHtml(digest: DailyDigest): string {
 </div>`.trim();
 }
 
-async function sendDigestBroadcast(env: DigestEnv, digest: DailyDigest): Promise<void> {
-  if (!env.RESEND_API_KEY || !env.RESEND_AUDIENCE_ID) return;
+async function sendDigestBroadcast(env: ResendEnv, digest: DailyDigest): Promise<void> {
+  const resend = getResendClient(env);
+  if (!resend || !env.RESEND_AUDIENCE_ID || !env.RESEND_FROM_EMAIL) return;
 
-  const from = env.RESEND_FROM_EMAIL;
-  if (!from) {
-    console.error('RESEND_FROM_EMAIL is not set');
-    return;
-  }
   const date = formatDate(digest.digest_date);
 
-  const createRes = await fetch('https://api.resend.com/broadcasts', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      audience_id: env.RESEND_AUDIENCE_ID,
-      from,
-      subject: `Azadi Wire Daily Digest — ${date}`,
-      html: buildDigestEmailHtml(digest),
-    }),
+  const { data, error } = await resend.broadcasts.create({
+    audienceId: env.RESEND_AUDIENCE_ID,
+    from: env.RESEND_FROM_EMAIL,
+    subject: `Azadi Wire Daily Digest — ${date}`,
+    html: buildDigestEmailHtml(digest),
   });
 
-  if (!createRes.ok) {
-    const body = await createRes.text().catch(() => '');
-    console.error('Failed to create digest broadcast', createRes.status, body);
+  if (error || !data) {
+    console.error('Failed to create digest broadcast', error);
     return;
   }
 
-  const { id } = await createRes.json() as { id: string };
-
-  const sendRes = await fetch(`https://api.resend.com/broadcasts/${id}/send`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}` },
-  });
-
-  if (!sendRes.ok) {
-    const body = await sendRes.text().catch(() => '');
-    console.error('Failed to send digest broadcast', sendRes.status, body);
+  const { error: sendError } = await resend.broadcasts.send(data.id);
+  if (sendError) {
+    console.error('Failed to send digest broadcast', sendError);
   }
 }
 
 const MIN_ARTICLES_FOR_DIGEST = 3;
 const DIGEST_HOUR_UTC = 18;
 
-export async function maybeGenerateDigest(db: any, ai?: any, env?: DigestEnv): Promise<boolean> {
+export async function maybeGenerateDigest(db: any, ai?: any, env?: ResendEnv): Promise<boolean> {
   const now = new Date();
   if (now.getUTCHours() < DIGEST_HOUR_UTC) return false;
 
@@ -174,7 +150,7 @@ export async function maybeGenerateDigest(db: any, ai?: any, env?: DigestEnv): P
   const exists = await digestExistsForDate(db, today);
   if (exists) return false;
 
-  const articles = await getLast24hArticles(db);
+  const articles = await getTodayArticles(db);
   if (articles.length < MIN_ARTICLES_FOR_DIGEST) return false;
 
   let response: DigestResponse;

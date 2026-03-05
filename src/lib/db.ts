@@ -353,11 +353,11 @@ export async function deleteOldVideos(db: D1Database, daysOld: number = 30): Pro
   await db.prepare('DELETE FROM videos WHERE published_at < ?').bind(cutoff).run();
 }
 
-export async function getLast24hArticles(db: D1Database): Promise<Article[]> {
-  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+export async function getTodayArticles(db: D1Database): Promise<Article[]> {
+  const today = new Date().toISOString().slice(0, 10);
   const result = await db
-    .prepare('SELECT * FROM articles WHERE published_at >= ? ORDER BY published_at DESC')
-    .bind(cutoff)
+    .prepare("SELECT * FROM articles WHERE published_at >= ? || 'T00:00:00.000Z' ORDER BY published_at DESC")
+    .bind(today)
     .all<Article>();
   return result.results;
 }
