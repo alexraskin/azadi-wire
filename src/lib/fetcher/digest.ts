@@ -122,7 +122,11 @@ function buildDigestEmailHtml(digest: DailyDigest): string {
 async function sendDigestBroadcast(env: DigestEnv, digest: DailyDigest): Promise<void> {
   if (!env.RESEND_API_KEY || !env.RESEND_AUDIENCE_ID) return;
 
-  const from = env.RESEND_FROM_EMAIL || 'Azadi Wire <digest@azadiwire.org>';
+  const from = env.RESEND_FROM_EMAIL;
+  if (!from) {
+    console.error('RESEND_FROM_EMAIL is not set');
+    return;
+  }
   const date = formatDate(digest.digest_date);
 
   const createRes = await fetch('https://api.resend.com/broadcasts', {

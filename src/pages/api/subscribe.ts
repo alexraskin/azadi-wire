@@ -25,8 +25,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    const referer = request.headers.get('referer') || '/subscribe';
-    return Response.redirect(new URL('/subscribe?error=invalid', referer.startsWith('http') ? referer : `https://azadiwire.org${referer}`).toString(), 303);
+    const origin = new URL(request.url).origin;
+    return Response.redirect(`${origin}/subscribe?error=invalid`, 303);
   }
 
   const res = await fetch(`https://api.resend.com/audiences/${RESEND_AUDIENCE_ID}/contacts`, {
@@ -39,29 +39,31 @@ export const POST: APIRoute = async ({ request, locals }) => {
   });
 
   if (res.ok) {
-    const RESEND_FROM_EMAIL: string = env.RESEND_FROM_EMAIL || 'Azadi Wire <digest@azadiwire.org>';
-    const unsubscribeUrl = `https://azadiwire.org/api/unsubscribe?email=${encodeURIComponent(email)}`;
-    await fetch('https://api.resend.com/emails/batch', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify([
-        {
-          from: RESEND_FROM_EMAIL,
-          to: [email],
-          subject: 'Welcome to the Azadi Wire Daily Digest',
-          headers: {
-            'List-Unsubscribe': `<${unsubscribeUrl}>`,
-            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-          },
-          html: `<p>Thanks for subscribing to the <strong>Azadi Wire Daily Digest</strong>.</p>
+    const RESEND_FROM_EMAIL: string | undefined = env.RESEND_FROM_EMAIL;
+    if (RESEND_FROM_EMAIL) {
+      const unsubscribeUrl = `https://azadiwire.org/api/unsubscribe?email=${encodeURIComponent(email)}`;
+      await fetch('https://api.resend.com/emails/batch', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([
+          {
+            from: RESEND_FROM_EMAIL,
+            to: [email],
+            subject: 'Welcome to the Azadi Wire Daily Digest',
+            headers: {
+              'List-Unsubscribe': `<${unsubscribeUrl}>`,
+              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            },
+            html: `<p>Thanks for subscribing to the <strong>Azadi Wire Daily Digest</strong>.</p>
 <p>You'll receive a morning roundup of top Iran news stories every day.</p>
 <p>You can <a href="${unsubscribeUrl}">unsubscribe</a> at any time.</p>`,
-        },
-      ]),
-    }).catch(() => {/* best-effort — don't block redirect on email failure */});
+          },
+        ]),
+      }).catch(() => {});
+    }
 
     const origin = new URL(request.url).origin;
     return Response.redirect(`${origin}/subscribe?success=true`, 303);
