@@ -657,6 +657,29 @@ a:hover {
   font-size: 14px;
 }
 
+.digest-subscribe-hint {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 24px 0;
+}
+
+.digest-subscribe-hint a {
+  color: var(--text-muted);
+  text-decoration: underline;
+}
+
+.digest-subscribe-hint a:hover {
+  color: var(--text);
+}
+
+.digest-ai-note {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
 /* Error state */
 .error-state {
   text-align: center;
