@@ -204,4 +204,48 @@ function pageUrl(p: number): string {
   <script>
     import '../scripts/bookmarks';
   </script>
+
+  <script define:vars={{ page, isSearching }}>
+    // Auto-refresh every 30 seconds on the first page when not searching
+    if (page === 1 && !isSearching) {
+      const REFRESH_INTERVAL = 30;
+      let remaining = REFRESH_INTERVAL;
+      let timerId: ReturnType<typeof setInterval>;
+
+      const indicator = document.createElement('div');
+      indicator.id = 'auto-refresh-indicator';
+      indicator.textContent = `Refreshing in ${remaining}s`;
+      document.body.appendChild(indicator);
+
+      timerId = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          clearInterval(timerId);
+          window.location.reload();
+        } else {
+          indicator.textContent = `Refreshing in ${remaining}s`;
+        }
+      }, 1000);
+
+      // Pause refresh when tab is hidden, resume when visible
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          clearInterval(timerId);
+        } else {
+          // Reset countdown when tab becomes visible again
+          remaining = REFRESH_INTERVAL;
+          indicator.textContent = `Refreshing in ${remaining}s`;
+          timerId = setInterval(() => {
+            remaining -= 1;
+            if (remaining <= 0) {
+              clearInterval(timerId);
+              window.location.reload();
+            } else {
+              indicator.textContent = `Refreshing in ${remaining}s`;
+            }
+          }, 1000);
+        }
+      });
+    }
+  </script>
 </Base>
