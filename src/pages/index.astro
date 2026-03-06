@@ -210,7 +210,7 @@ function pageUrl(p: number): string {
     if (page === 1 && !isSearching) {
       const REFRESH_INTERVAL = 30;
       let remaining = REFRESH_INTERVAL;
-      let timerId: ReturnType<typeof setInterval>;
+      let timerId;
 
       const indicator = document.createElement('div');
       indicator.id = 'auto-refresh-indicator';
