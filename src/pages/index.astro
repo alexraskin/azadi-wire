@@ -206,44 +206,23 @@ function pageUrl(p: number): string {
   </script>
 
   <script define:vars={{ page, isSearching }}>
-    // Auto-refresh every 30 seconds on the first page when not searching
+    // Auto-refresh every 5 minutes on the first page when not searching
     if (page === 1 && !isSearching) {
-      const REFRESH_INTERVAL = 30;
-      let remaining = REFRESH_INTERVAL;
+      const REFRESH_MS = 5 * 60 * 1000;
       let timerId;
 
-      const indicator = document.createElement('div');
-      indicator.id = 'auto-refresh-indicator';
-      indicator.textContent = `Refreshing in ${remaining}s`;
-      document.body.appendChild(indicator);
+      const schedule = () => {
+        timerId = setTimeout(() => window.location.reload(), REFRESH_MS);
+      };
 
-      timerId = setInterval(() => {
-        remaining -= 1;
-        if (remaining <= 0) {
-          clearInterval(timerId);
-          window.location.reload();
-        } else {
-          indicator.textContent = `Refreshing in ${remaining}s`;
-        }
-      }, 1000);
+      schedule();
 
-      // Pause refresh when tab is hidden, resume when visible
+      // Pause refresh when tab is hidden, reset timer when visible again
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
-          clearInterval(timerId);
+          clearTimeout(timerId);
         } else {
-          // Reset countdown when tab becomes visible again
-          remaining = REFRESH_INTERVAL;
-          indicator.textContent = `Refreshing in ${remaining}s`;
-          timerId = setInterval(() => {
-            remaining -= 1;
-            if (remaining <= 0) {
-              clearInterval(timerId);
-              window.location.reload();
-            } else {
-              indicator.textContent = `Refreshing in ${remaining}s`;
-            }
-          }, 1000);
+          schedule();
         }
       });
     }
