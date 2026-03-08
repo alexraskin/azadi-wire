@@ -1,54 +1,34 @@
-import type { APIRoute } from 'astro';
+import rss from '@astrojs/rss';
 import { getArticles, getReadDB } from '../lib/db';
 import { TOPIC_LABELS } from '../lib/types';
 import type { Topic } from '../lib/types';
 
 const SITE_URL = 'https://azadiwire.org';
 
-function escapeXml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
-
-export const GET: APIRoute = async ({ locals }) => {
-  const db = getReadDB((locals as any).runtime.env);
+export const GET = async ({ locals }: { locals: any }) => {
+  const db = getReadDB(locals.runtime.env);
   const { articles } = await getArticles(db, { limit: 50 });
 
-  const items = articles
-    .map((a) => {
-      const topic = TOPIC_LABELS[a.topic as Topic] || a.topic;
-      return `    <item>
-      <title>${escapeXml(a.title)}</title>
-      <link>${escapeXml(a.article_url)}</link>
-      <guid isPermaLink="false">${SITE_URL}/article/${a.slug || a.id}</guid>
-      <pubDate>${new Date(a.published_at).toUTCString()}</pubDate>
-      <source url="${escapeXml(a.source_url || '')}">${escapeXml(a.source_name)}</source>
-      <category>${escapeXml(topic)}</category>${a.summary ? `\n      <description>${escapeXml(a.summary)}</description>` : ''}${a.thumbnail_url ? `\n      <media:content url="${escapeXml(a.thumbnail_url)}" medium="image" />` : ''}
-    </item>`;
-    })
-    .join('\n');
-
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
-  <channel>
-    <title>Azadi Wire</title>
-    <link>${SITE_URL}</link>
-    <description>Independent English-language news aggregation focused on Iran</description>
-    <language>en</language>
-    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <atom:link href="${SITE_URL}/feed.xml" rel="self" type="application/rss+xml" />
-${items}
-  </channel>
-</rss>`;
-
-  return new Response(xml, {
-    headers: {
-      'Content-Type': 'application/rss+xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=900',
-    },
+  return rss({
+    title: 'Azadi Wire',
+    description: 'Independent English-language news aggregation focused on Iran',
+    site: SITE_URL,
+    xmlns: { media: 'http://search.yahoo.com/mrss/' },
+    customData: '<language>en</language>',
+    items: articles.map((a) => ({
+      title: a.title,
+      link: a.article_url,
+      description: a.summary ?? undefined,
+      pubDate: new Date(a.published_at),
+      categories: [TOPIC_LABELS[a.topic as Topic] || a.topic],
+      customData: [
+        `<source url="${a.source_url ?? ''}">${a.source_name}</source>`,
+        a.thumbnail_url
+          ? `<media:content url="${a.thumbnail_url}" medium="image" />`
+          : '',
+      ]
+        .filter(Boolean)
+        .join('\n      '),
+    })),
   });
 };
