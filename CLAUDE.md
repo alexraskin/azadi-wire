@@ -118,6 +118,7 @@ The fetcher runs every 15 minutes via Cloudflare Cron Triggers (`*/15 * * * *`),
 - `thumbnail_url`, `published_at`, `fetched_at`
 - `topic` TEXT (DEFAULT `'general'`, see topics below)
 - `slug` TEXT UNIQUE (URL-safe title identifier)
+- `importance_score` INTEGER (AI-rated 1-10, nullable; 10 = breaking news, 1 = routine)
 
 **`sources`** — Configured news sources
 - `id` TEXT PRIMARY KEY
@@ -190,8 +191,9 @@ The main orchestrator:
 
 ### AI Categorization (`src/lib/fetcher/categorizer.ts`)
 
-- **Primary**: Calls Cloudflare Workers AI with a structured prompt asking for one of the 7 topic values
-- **Fallback**: Keyword-based matching if AI is unavailable or returns an invalid topic
+- **Primary**: Calls Cloudflare Workers AI with a structured prompt asking for one of the 7 topic values and an importance score (1-10)
+- Returns both `topic` and `importance` in a single AI call (JSON response)
+- **Fallback**: Keyword-based matching if AI is unavailable or returns an invalid response (importance is null in fallback)
 - Always produces a valid topic from the allowed set
 
 ### Digest Generation (`src/lib/fetcher/digest.ts`)

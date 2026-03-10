@@ -10,6 +10,7 @@ export interface Article {
   published_at: string;
   fetched_at: string;
   topic: Topic;
+  importance_score: number | null;
 }
 
 export function slugify(title: string): string {

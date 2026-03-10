@@ -1,9 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getArticles, searchArticles, getArticleSourceNames, getLatestVideos, getReadDB } from '../lib/db';
+import { getArticles, searchArticles, getArticleSourceNames, getLatestVideos, getTopArticles, getReadDB } from '../lib/db';
 import { relativeTime } from '../lib/time';
 import { TOPICS, TOPIC_LABELS } from '../lib/types';
-import type { Topic, Video } from '../lib/types';
+import type { Article, Topic, Video } from '../lib/types';
 
 const url = Astro.url;
 const currentTopic = url.searchParams.get('topic') || '';
@@ -19,12 +19,13 @@ let total = 0;
 let pages = 0;
 let sourceNames: string[] = [];
 let latestVideos: Video[] = [];
+let topStories: Article[] = [];
 let fetchError = false;
 
-const showVideos = !isSearching && !currentTopic && !currentSource && page === 1;
+const isFirstPage = !isSearching && !currentTopic && !currentSource && page === 1;
 
 try {
-  const [result, names, videos] = await Promise.all([
+  const [result, names, videos, top] = await Promise.all([
     isSearching
       ? searchArticles(db, currentQuery, { page, limit: 20 })
       : getArticles(db, {
@@ -34,13 +35,15 @@ try {
           limit: 20,
         }),
     getArticleSourceNames(db),
-    showVideos ? getLatestVideos(db, 4) : Promise.resolve([]),
+    isFirstPage ? getLatestVideos(db, 4) : Promise.resolve([]),
+    isFirstPage ? getTopArticles(db, 5) : Promise.resolve([]),
   ]);
   articles = result.articles;
   total = result.total;
   pages = result.pages;
   sourceNames = names;
   latestVideos = videos;
+  topStories = top;
 } catch {
   fetchError = true;
 }
@@ -112,6 +115,33 @@ function pageUrl(p: number): string {
       {total} result{total !== 1 ? 's' : ''} for "{currentQuery}"
       <a href="/">Clear</a>
     </p>
+  )}
+
+  {!fetchError && topStories.length > 0 && (
+    <section class="top-stories">
+      <h2 class="top-stories-title">Top Stories</h2>
+      <div class="top-stories-grid">
+        {topStories.map((article) => (
+          <a href={`/article/${article.slug || article.id}`} class="top-story-card">
+            {article.thumbnail_url && (
+              <img
+                src={article.thumbnail_url}
+                alt=""
+                class="top-story-thumb"
+                loading="lazy"
+                onerror="this.style.display='none'"
+              />
+            )}
+            <div class="top-story-body">
+              <span class="top-story-headline">{article.title}</span>
+              <span class="top-story-meta">
+                {article.source_name} · {relativeTime(article.published_at)}
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
   )}
 
   {!fetchError && latestVideos.length > 0 && (

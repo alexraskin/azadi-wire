@@ -13,7 +13,7 @@
 		"migrate-local": "wrangler d1 migrations apply azadi-wire-db --local"
 	},
 	"dependencies": {
-		"@astrojs/cloudflare": "^12.6.12",
+		"@astrojs/cloudflare": "^12.6.13",
 		"@astrojs/rss": "^4.0.15",
 		"@astrojs/sitemap": "^3.7.0",
 		"astro": "^5.17.1",

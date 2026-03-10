@@ -137,8 +137,8 @@ export async function insertArticle(
 ): Promise<void> {
   await db
     .prepare(
-      `INSERT OR IGNORE INTO articles (id, slug, title, summary, source_name, source_url, article_url, thumbnail_url, published_at, fetched_at, topic)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT OR IGNORE INTO articles (id, slug, title, summary, source_name, source_url, article_url, thumbnail_url, published_at, fetched_at, topic, importance_score)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(
       article.id,
@@ -151,9 +151,28 @@ export async function insertArticle(
       article.thumbnail_url,
       article.published_at,
       article.fetched_at,
-      article.topic
+      article.topic,
+      article.importance_score
     )
     .run();
+}
+
+export async function getTopArticles(
+  db: D1Database,
+  limit: number = 5,
+  hoursBack: number = 48
+): Promise<Article[]> {
+  const cutoff = new Date(Date.now() - hoursBack * 3600000).toISOString();
+  const result = await db
+    .prepare(
+      `SELECT * FROM articles
+       WHERE published_at >= ? AND importance_score >= 7
+       ORDER BY importance_score DESC, published_at DESC
+       LIMIT ?`
+    )
+    .bind(cutoff, limit)
+    .all<Article>();
+  return result.results;
 }
 
 export async function searchArticles(

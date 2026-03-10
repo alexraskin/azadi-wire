@@ -30,7 +30,7 @@ export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ insert
 
           if (isDuplicate(item.title, existingTitles)) continue;
 
-          const topic = await categorize(item.title, item.summary, ai);
+          const { topic, importance } = await categorize(item.title, item.summary, ai);
           const id = crypto.randomUUID();
           const slug = `${slugify(item.title)}-${id.slice(0, 6)}`;
           const article: Article = {
@@ -45,6 +45,7 @@ export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ insert
             published_at: item.published_at,
             fetched_at: now,
             topic,
+            importance_score: importance,
           };
 
           await insertArticle(db, article);
