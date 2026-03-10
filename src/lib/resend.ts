@@ -3,6 +3,7 @@ import { Resend } from 'resend';
 export interface ResendEnv {
   RESEND_API_KEY?: string;
   RESEND_AUDIENCE_ID?: string;
+  RESEND_SEGMENT_ID?: string;
   RESEND_FROM_EMAIL?: string;
 }
 

@@ -30,35 +30,39 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return Response.redirect(`${origin}/subscribe?error=invalid`, 303);
   }
 
-  const { error } = await resend.contacts.create({
-    audienceId,
-    email,
-    unsubscribed: false,
-  });
+  const segmentId: string | undefined = env.RESEND_SEGMENT_ID;
 
-  if (error) {
+  const { error: contactError } = segmentId
+    ? await resend.contacts.create({ email, unsubscribed: false, segments: [{ id: segmentId }] })
+    : await resend.contacts.create({ audienceId, email, unsubscribed: false });
+
+  if (contactError) {
     const origin = new URL(request.url).origin;
-    if (error.name === 'validation_error') {
+    if (contactError.name === 'validation_error') {
       return Response.redirect(`${origin}/subscribe?error=exists`, 303);
     }
     return Response.redirect(`${origin}/subscribe?error=server`, 303);
   }
 
   const fromEmail: string | undefined = env.RESEND_FROM_EMAIL;
-  if (fromEmail) {
-    const unsubscribeUrl = `https://azadiwire.org/api/unsubscribe?email=${encodeURIComponent(email)}`;
-    await resend.emails.send({
-      from: fromEmail,
-      to: [email],
-      subject: 'Welcome to the Azadi Wire Daily Digest',
-      headers: {
-        'List-Unsubscribe': `<${unsubscribeUrl}>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-      },
-      html: `<p>Thanks for subscribing to the <strong>Azadi Wire Daily Digest</strong>.</p>
+  const unsubscribeUrl = `https://azadiwire.org/api/unsubscribe?email=${encodeURIComponent(email)}`;
+  const welcomePayload = {
+    from: fromEmail ?? 'Azadi Wire <onboarding@resend.dev>',
+    to: [email],
+    subject: 'Welcome to the Azadi Wire Daily Digest',
+    headers: {
+      'List-Unsubscribe': `<${unsubscribeUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
+    html: `<p>Thanks for subscribing to the <strong>Azadi Wire Daily Digest</strong>.</p>
 <p>You'll receive a morning roundup of top Iran news stories every day.</p>
 <p>You can <a href="${unsubscribeUrl}">unsubscribe</a> at any time.</p>`,
-    }).catch(() => {});
+  };
+
+  const { error: emailError } = await resend.emails.send(welcomePayload);
+
+  if (emailError) {
+    console.error('Welcome email failed:', emailError.message, emailError.name);
   }
 
   const origin = new URL(request.url).origin;

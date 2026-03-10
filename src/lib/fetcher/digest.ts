@@ -116,25 +116,28 @@ function buildDigestEmailHtml(digest: DailyDigest): string {
 
 async function sendDigestBroadcast(env: ResendEnv, digest: DailyDigest): Promise<void> {
   const resend = getResendClient(env);
-  if (!resend || !env.RESEND_AUDIENCE_ID || !env.RESEND_FROM_EMAIL) return;
+  const audienceOrSegment = env.RESEND_SEGMENT_ID ?? env.RESEND_AUDIENCE_ID;
+  if (!resend || !audienceOrSegment || !env.RESEND_FROM_EMAIL) return;
 
   const date = formatDate(digest.digest_date);
 
   const { data, error } = await resend.broadcasts.create({
-    audienceId: env.RESEND_AUDIENCE_ID,
+    ...(env.RESEND_SEGMENT_ID
+      ? { segmentId: env.RESEND_SEGMENT_ID }
+      : { audienceId: env.RESEND_AUDIENCE_ID! }),
     from: env.RESEND_FROM_EMAIL,
     subject: `Azadi Wire Daily Digest — ${date}`,
     html: buildDigestEmailHtml(digest),
+    send: true,
   });
 
   if (error || !data) {
-    console.error('Failed to create digest broadcast', error);
-    return;
-  }
-
-  const { error: sendError } = await resend.broadcasts.send(data.id);
-  if (sendError) {
-    console.error('Failed to send digest broadcast', sendError);
+    const noContacts =
+      error?.message?.includes('no contacts') ||
+      (error as { statusCode?: number } | null)?.statusCode === 422;
+    if (!noContacts) {
+      console.error('Failed to create/send digest broadcast', error);
+    }
   }
 }
 
