@@ -216,7 +216,7 @@ export async function maybeGenerateDigest(db: any, ai?: any, env?: ResendEnv): P
 
   let topArticles: Article[] = [];
   try {
-    topArticles = await getTopArticles(db, 5, 24);
+    topArticles = await getTopArticles(db, { limit: 10, hoursBack: 24, minScore: 5 });
   } catch {
     // non-critical
   }

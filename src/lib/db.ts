@@ -159,18 +159,20 @@ export async function insertArticle(
 
 export async function getTopArticles(
   db: D1Database,
-  limit: number = 5,
-  hoursBack: number = 48
+  opts: { limit?: number; hoursBack?: number; minScore?: number } = {}
 ): Promise<Article[]> {
+  const limit = opts.limit ?? 5;
+  const hoursBack = opts.hoursBack ?? 48;
+  const minScore = opts.minScore ?? 7;
   const cutoff = new Date(Date.now() - hoursBack * 3600000).toISOString();
   const result = await db
     .prepare(
       `SELECT * FROM articles
-       WHERE published_at >= ? AND importance_score >= 7
+       WHERE published_at >= ? AND importance_score >= ?
        ORDER BY importance_score DESC, published_at DESC
        LIMIT ?`
     )
-    .bind(cutoff, limit)
+    .bind(cutoff, minScore, limit)
     .all<Article>();
   return result.results;
 }

@@ -36,7 +36,7 @@ try {
         }),
     getArticleSourceNames(db),
     isFirstPage ? getLatestVideos(db, 4) : Promise.resolve([]),
-    isFirstPage ? getTopArticles(db, 5) : Promise.resolve([]),
+    isFirstPage ? getTopArticles(db) : Promise.resolve([]),
   ]);
   articles = result.articles;
   total = result.total;

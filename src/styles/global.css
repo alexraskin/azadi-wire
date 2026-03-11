@@ -911,3 +911,68 @@ a:hover {
   display: flex;
   gap: 4px;
 }
+
+/* RSS page */
+.rss-page {
+  max-width: 540px;
+}
+
+.rss-intro {
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.rss-feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rss-feed-card {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+}
+
+.rss-feed-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.rss-feed-icon-top {
+  color: var(--text);
+}
+
+.rss-feed-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.rss-feed-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.rss-feed-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.rss-feed-link {
+  font-size: 14px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  color: var(--text);
+}
+
+.rss-feed-copy {
+  color: var(--text-muted);
+}
+
+.rss-note {
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
