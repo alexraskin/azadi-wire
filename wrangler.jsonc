@@ -33,9 +33,12 @@
 			"pattern": "azadiwire.org",
 			"custom_domain": true
 		},
-    {
-      "pattern": "www.azadiwire.org",
-      "custom_domain": true
-    }
-  ]
+    	{
+      		"pattern": "www.azadiwire.org",
+      		"custom_domain": true
+    	}
+    ],
+  "vars": {
+	"TURNSTILE_SITE_KEY": "0x4AAAAAACpPJh7n8BglEnWx"
+  }
 }

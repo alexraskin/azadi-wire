@@ -93,6 +93,8 @@ npm run migrate-local     # Apply migrations to local D1 database
 | `RESEND_AUDIENCE_ID` | Var | Resend audience ID for newsletter |
 | `RESEND_FROM_EMAIL` | Var | Sender address for digests |
 | `CRON_SECRET` | Secret | Auth token for `/api/cron` and `/api/status` |
+| `TURNSTILE_SITE_KEY` | Var | Cloudflare Turnstile public site key |
+| `TURNSTILE_SECRET_KEY` | Secret | Cloudflare Turnstile secret key for server-side validation |
 
 For local development, define these in `.dev.vars` (gitignored):
 
@@ -101,6 +103,8 @@ RESEND_API_KEY=re_...
 RESEND_AUDIENCE_ID=...
 RESEND_FROM_EMAIL=digest@azadiwire.org
 CRON_SECRET=your-secret-here
+TURNSTILE_SITE_KEY=1x00000000000000000000AA
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
 ```
 
 ### Cron Schedule

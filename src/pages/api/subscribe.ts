@@ -1,6 +1,16 @@
 import type { APIRoute } from 'astro';
 import { getResendClient } from '../../lib/resend';
 
+const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+
+async function verifyTurnstile(token: string, secret: string, ip: string | null): Promise<boolean> {
+  const body = new URLSearchParams({ secret, response: token });
+  if (ip) body.set('remoteip', ip);
+  const res = await fetch(TURNSTILE_VERIFY_URL, { method: 'POST', body });
+  const data = await res.json() as { success: boolean };
+  return data.success;
+}
+
 export const POST: APIRoute = async ({ request, locals }) => {
   const env = (locals as any).runtime.env;
   const resend = getResendClient(env);
@@ -14,20 +24,37 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   let email: string | null = null;
+  let turnstileToken: string | null = null;
 
   const contentType = request.headers.get('content-type') || '';
   if (contentType.includes('application/x-www-form-urlencoded')) {
     const body = await request.text();
     const params = new URLSearchParams(body);
     email = params.get('email');
+    turnstileToken = params.get('cf-turnstile-response');
   } else if (contentType.includes('application/json')) {
     const body = await request.json();
     email = (body as any).email;
+    turnstileToken = (body as any)['cf-turnstile-response'] ?? null;
   }
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     const origin = new URL(request.url).origin;
     return Response.redirect(`${origin}/subscribe?error=invalid`, 303);
+  }
+
+  const turnstileSecret: string | undefined = env.TURNSTILE_SECRET_KEY;
+  if (turnstileSecret) {
+    if (!turnstileToken) {
+      const origin = new URL(request.url).origin;
+      return Response.redirect(`${origin}/subscribe?error=captcha`, 303);
+    }
+    const ip = request.headers.get('cf-connecting-ip');
+    const valid = await verifyTurnstile(turnstileToken, turnstileSecret, ip);
+    if (!valid) {
+      const origin = new URL(request.url).origin;
+      return Response.redirect(`${origin}/subscribe?error=captcha`, 303);
+    }
   }
 
   const segmentId: string | undefined = env.RESEND_SEGMENT_ID;

@@ -3,10 +3,12 @@ import Base from '../layouts/Base.astro';
 
 const success = Astro.url.searchParams.get('success') === 'true';
 const error = Astro.url.searchParams.get('error');
+const turnstileSiteKey: string | undefined = (Astro.locals as any).runtime?.env?.TURNSTILE_SITE_KEY;
 
 const errorMessages: Record<string, string> = {
   invalid: 'Please enter a valid email address.',
   exists: 'That email is already subscribed.',
+  captcha: 'Verification failed. Please try again.',
   server: 'Something went wrong. Please try again later.',
 };
 ---
@@ -44,10 +46,17 @@ const errorMessages: Record<string, string> = {
           />
           <button type="submit" class="btn">Subscribe</button>
         </div>
+        {turnstileSiteKey && (
+          <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-theme="auto"></div>
+        )}
         <p class="subscribe-note">
           You can unsubscribe at any time. See our <a href="/terms">Terms</a>.
         </p>
       </form>
     )}
   </div>
+
+  {turnstileSiteKey && (
+    <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  )}
 </Base>
