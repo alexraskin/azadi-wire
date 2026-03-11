@@ -71,16 +71,25 @@ function buildUserPrompt(title: string, summary: string | null): string {
   return prompt;
 }
 
-function parseAIResponse(raw: string): CategorizeResult | null {
+function extractResult(obj: Record<string, unknown>): CategorizeResult | null {
+  const topic = parseTopic(obj.topic);
+  const importance = parseImportance(obj.importance);
+  if (topic) return { topic, importance };
+  return null;
+}
+
+function parseAIResponse(raw: unknown): CategorizeResult | null {
+  if (typeof raw === 'object' && raw !== null) {
+    return extractResult(raw as Record<string, unknown>);
+  }
+
+  if (typeof raw !== 'string') return null;
   const text = raw.trim();
 
   const jsonMatch = text.match(/\{[\s\S]*?\}/);
   if (jsonMatch) {
     try {
-      const parsed = JSON.parse(jsonMatch[0]);
-      const topic = parseTopic(parsed.topic);
-      const importance = parseImportance(parsed.importance);
-      if (topic) return { topic, importance };
+      return extractResult(JSON.parse(jsonMatch[0]));
     } catch { /* fall through */ }
   }
 
@@ -122,7 +131,7 @@ export async function categorize(
       }, {
         gateway: { id: 'azadiwire' },
       });
-      const result = parseAIResponse(response.response ?? '');
+      const result = parseAIResponse(response.response ?? response);
       if (result) return result;
     } catch (err) {
       console.error('AI unavailable', err);
