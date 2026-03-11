@@ -68,7 +68,7 @@ function pageUrl(p: number): string {
 }
 ---
 
-<Base title={isSearching ? `Search: ${currentQuery}` : 'Feed'}>
+<Base title={isSearching ? `Search: ${currentQuery}` : 'Feed'} description="Latest Iran news from 20+ independent sources, updated every 15 minutes. Coverage of politics, human rights, protests, sanctions, and more.">
   {fetchError ? (
     <div class="error-state">
       <h2>Something went wrong</h2>
@@ -126,7 +126,7 @@ function pageUrl(p: number): string {
             {article.thumbnail_url && (
               <img
                 src={article.thumbnail_url}
-                alt=""
+                alt={article.title}
                 class="top-story-thumb"
                 loading="lazy"
                 onerror="this.style.display='none'"
@@ -161,7 +161,7 @@ function pageUrl(p: number): string {
             <div class="video-thumb-wrap">
               <img
                 src={video.thumbnail_url}
-                alt=""
+                alt={video.title}
                 class="video-thumb"
                 loading="lazy"
                 onerror="this.style.display='none'"
@@ -187,7 +187,7 @@ function pageUrl(p: number): string {
           {article.thumbnail_url && (
             <img
               src={article.thumbnail_url}
-              alt=""
+              alt={article.title}
               class="article-thumb"
               loading="lazy"
               onerror="this.style.display='none';this.parentElement.classList.remove('has-thumb')"

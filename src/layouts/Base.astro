@@ -6,19 +6,35 @@ interface Props {
   description?: string;
   image?: string;
   ogType?: string;
+  publishedTime?: string;
+  section?: string;
+  noindex?: boolean;
+  jsonLd?: Record<string, any>;
 }
 
 const SITE_URL = 'https://azadiwire.org';
 const DEFAULT_DESC = 'Azadi Wire – Independent Iran news aggregation';
 const DEFAULT_IMAGE = `${SITE_URL}/favicon-96x96.png`;
 
-const { title, description, image, ogType } = Astro.props;
+const { title, description, image, ogType, publishedTime, section, noindex, jsonLd } = Astro.props;
 const pageTitle = `${title} | Azadi Wire`;
 const metaDesc = description || DEFAULT_DESC;
 const metaImage = image || DEFAULT_IMAGE;
 const metaType = ogType || 'website';
-const canonicalUrl = Astro.url.href;
+const canonicalUrl = new URL(Astro.url.pathname, SITE_URL).href;
 const pathname = Astro.url.pathname;
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Azadi Wire',
+  url: SITE_URL,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: `${SITE_URL}/?q={search_term_string}`,
+    'query-input': 'required name=search_term_string',
+  },
+};
 
 function isActive(href: string): boolean {
   if (href === '/') return pathname === '/';
@@ -30,6 +46,7 @@ function isActive(href: string): boolean {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
     <meta name="description" content={metaDesc} />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={metaDesc} />
@@ -37,6 +54,13 @@ function isActive(href: string): boolean {
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={metaImage} />
     <meta property="og:site_name" content="Azadi Wire" />
+    <meta property="og:locale" content="en_US" />
+    {metaType === 'article' && publishedTime && (
+      <meta property="article:published_time" content={new Date(publishedTime).toISOString()} />
+    )}
+    {metaType === 'article' && section && (
+      <meta property="article:section" content={section} />
+    )}
     <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={metaDesc} />
@@ -46,10 +70,14 @@ function isActive(href: string): boolean {
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <link rel="dns-prefetch" href="https://i.ytimg.com" />
+    <link rel="dns-prefetch" href="https://cdn.iranintl.com" />
     <link rel="alternate" type="application/rss+xml" title="Azadi Wire" href="/feed.xml" />
     <link rel="alternate" type="application/rss+xml" title="Azadi Wire – Top Stories" href="/top.xml" />
     <link rel="canonical" href={canonicalUrl} />
     <title>{pageTitle}</title>
+    <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
   </head>
   <body>
     <header class="site-header">

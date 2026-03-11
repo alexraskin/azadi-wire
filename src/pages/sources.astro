@@ -6,7 +6,7 @@ const db = getReadDB((Astro.locals as any).runtime.env);
 const sources = await getAllSources(db);
 ---
 
-<Base title="Sources">
+<Base title="Sources" description="News sources aggregated by Azadi Wire — 20+ independent outlets covering Iran.">
   <h1 class="page-title">Sources</h1>
   <ul class="source-list">
     {sources.map((source) => (

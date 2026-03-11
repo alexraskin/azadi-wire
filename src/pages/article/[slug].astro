@@ -5,6 +5,7 @@ import { formatDate } from '../../lib/time';
 import { TOPIC_LABELS } from '../../lib/types';
 import type { Topic } from '../../lib/types';
 
+const SITE_URL = 'https://azadiwire.org';
 const { slug } = Astro.params;
 const db = getReadDB((Astro.locals as any).runtime.env);
 
@@ -23,6 +24,18 @@ try {
 if (!fetchError && !article) {
   return new Response(null, { status: 404, statusText: 'Not Found' });
 }
+
+const articleJsonLd = !fetchError && article ? {
+  '@context': 'https://schema.org',
+  '@type': 'NewsArticle',
+  headline: article.title,
+  datePublished: new Date(article.published_at).toISOString(),
+  ...(article.summary && { description: article.summary }),
+  ...(article.thumbnail_url && { image: article.thumbnail_url }),
+  author: { '@type': 'Organization', name: article.source_name },
+  publisher: { '@type': 'Organization', name: 'Azadi Wire', url: SITE_URL },
+  mainEntityOfPage: `${SITE_URL}/article/${article.slug || article.id}`,
+} : undefined;
 ---
 
 <Base
@@ -30,6 +43,9 @@ if (!fetchError && !article) {
   description={fetchError ? undefined : (article.summary || undefined)}
   image={fetchError ? undefined : (article.thumbnail_url || undefined)}
   ogType="article"
+  publishedTime={fetchError ? undefined : article.published_at}
+  section={fetchError ? undefined : (TOPIC_LABELS[article.topic as Topic] || undefined)}
+  jsonLd={articleJsonLd}
 >
   {fetchError ? (
     <div class="error-state">
@@ -54,7 +70,7 @@ if (!fetchError && !article) {
       {article.thumbnail_url && (
         <img
           src={article.thumbnail_url}
-          alt=""
+          alt={article.title}
           class="article-detail-thumb"
           loading="lazy"
           onerror="this.style.display='none'"
