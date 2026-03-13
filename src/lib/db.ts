@@ -50,19 +50,14 @@ export async function getArticles(
 
   const where = conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : '';
 
-  const countResult = await db
-    .prepare('SELECT COUNT(*) as total FROM articles' + where)
-    .bind(...params)
-    .first<{ total: number }>();
-  const total = countResult?.total || 0;
-
-  const listResult = await db
-    .prepare('SELECT * FROM articles' + where + ' ORDER BY published_at DESC LIMIT ? OFFSET ?')
-    .bind(...params, limit, offset)
-    .all<Article>();
+  const [countResult, listResult] = await db.batch([
+    db.prepare('SELECT COUNT(*) as total FROM articles' + where).bind(...params),
+    db.prepare('SELECT * FROM articles' + where + ' ORDER BY published_at DESC LIMIT ? OFFSET ?').bind(...params, limit, offset),
+  ]);
+  const total = (countResult.results[0] as { total: number })?.total ?? 0;
 
   return {
-    articles: listResult.results,
+    articles: listResult.results as Article[],
     total,
     page,
     pages: Math.ceil(total / limit),
@@ -120,6 +115,32 @@ export async function articleUrlExists(
     .bind(url)
     .first();
   return row !== null;
+}
+
+export async function getExistingArticleUrls(
+  db: D1Database,
+  urls: string[]
+): Promise<Set<string>> {
+  if (urls.length === 0) return new Set();
+  const placeholders = urls.map(() => '?').join(', ');
+  const result = await db
+    .prepare(`SELECT article_url FROM articles WHERE article_url IN (${placeholders})`)
+    .bind(...urls)
+    .all<{ article_url: string }>();
+  return new Set(result.results.map((r) => r.article_url));
+}
+
+export async function getExistingVideoIds(
+  db: D1Database,
+  videoIds: string[]
+): Promise<Set<string>> {
+  if (videoIds.length === 0) return new Set();
+  const placeholders = videoIds.map(() => '?').join(', ');
+  const result = await db
+    .prepare(`SELECT video_id FROM videos WHERE video_id IN (${placeholders})`)
+    .bind(...videoIds)
+    .all<{ video_id: string }>();
+  return new Set(result.results.map((r) => r.video_id));
 }
 
 export async function getTodayTitles(db: D1Database): Promise<string[]> {
@@ -192,25 +213,20 @@ export async function searchArticles(
   }
   const safeQuery = `"${cleaned.replace(/"/g, '""')}"`;
 
-  const countResult = await db
-    .prepare('SELECT COUNT(*) as total FROM articles_fts WHERE articles_fts MATCH ?')
-    .bind(safeQuery)
-    .first<{ total: number }>();
-  const total = countResult?.total || 0;
-
-  const listResult = await db
-    .prepare(
+  const [countResult, listResult] = await db.batch([
+    db.prepare('SELECT COUNT(*) as total FROM articles_fts WHERE articles_fts MATCH ?').bind(safeQuery),
+    db.prepare(
       `SELECT a.* FROM articles a
        JOIN articles_fts fts ON a.rowid = fts.rowid
        WHERE articles_fts MATCH ?
        ORDER BY fts.rank
        LIMIT ? OFFSET ?`
-    )
-    .bind(safeQuery, limit, offset)
-    .all<Article>();
+    ).bind(safeQuery, limit, offset),
+  ]);
+  const total = (countResult.results[0] as { total: number })?.total ?? 0;
 
   return {
-    articles: listResult.results,
+    articles: listResult.results as Article[],
     total,
     page,
     pages: Math.ceil(total / limit),
@@ -335,19 +351,14 @@ export async function getVideos(
 
   const where = conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : '';
 
-  const countResult = await db
-    .prepare('SELECT COUNT(*) as total FROM videos' + where)
-    .bind(...params)
-    .first<{ total: number }>();
-  const total = countResult?.total || 0;
-
-  const listResult = await db
-    .prepare('SELECT * FROM videos' + where + ' ORDER BY published_at DESC LIMIT ? OFFSET ?')
-    .bind(...params, limit, offset)
-    .all<Video>();
+  const [countResult, listResult] = await db.batch([
+    db.prepare('SELECT COUNT(*) as total FROM videos' + where).bind(...params),
+    db.prepare('SELECT * FROM videos' + where + ' ORDER BY published_at DESC LIMIT ? OFFSET ?').bind(...params, limit, offset),
+  ]);
+  const total = (countResult.results[0] as { total: number })?.total ?? 0;
 
   return {
-    videos: listResult.results,
+    videos: listResult.results as Video[],
     total,
     page,
     pages: Math.ceil(total / limit),

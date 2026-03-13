@@ -1,6 +1,6 @@
 import type { Article, Source, Video } from '../types';
 import { slugify } from '../types';
-import { getActiveSources, articleUrlExists, getTodayTitles, insertArticle, deleteOldArticles, insertFetcherRun, videoIdExists, insertVideo, deleteOldVideos } from '../db';
+import { getActiveSources, getExistingArticleUrls, getTodayTitles, insertArticle, deleteOldArticles, insertFetcherRun, getExistingVideoIds, insertVideo, deleteOldVideos } from '../db';
 import { fetchRSS } from './rss';
 import { scrapePage } from './scraper';
 import { categorize } from './categorizer';
@@ -23,14 +23,23 @@ export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ insert
     for (const source of articleSources) {
       try {
         const items = await fetchItemsForSource(source);
+        const candidateUrls = items.map((i) => i.article_url);
+        const existingUrls = await getExistingArticleUrls(db, candidateUrls);
 
-        for (const item of items) {
-          const exists = await articleUrlExists(db, item.article_url);
-          if (exists) continue;
+        const newItems = items.filter((item) => {
+          if (existingUrls.has(item.article_url)) return false;
+          if (isDuplicate(item.title, existingTitles)) return false;
+          existingTitles.push(item.title);
+          return true;
+        });
 
-          if (isDuplicate(item.title, existingTitles)) continue;
+        const categorized = await Promise.all(
+          newItems.map((item) => categorize(item.title, item.summary, ai))
+        );
 
-          const { topic, importance } = await categorize(item.title, item.summary, ai);
+        for (let i = 0; i < newItems.length; i++) {
+          const item = newItems[i];
+          const { topic, importance } = categorized[i];
           const id = crypto.randomUUID();
           const slug = `${slugify(item.title)}-${id.slice(0, 6)}`;
           const article: Article = {
@@ -49,7 +58,6 @@ export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ insert
           };
 
           await insertArticle(db, article);
-          existingTitles.push(item.title);
           inserted++;
         }
       } catch {
@@ -60,9 +68,11 @@ export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ insert
     for (const source of youtubeSources) {
       try {
         const items = await fetchYouTubeFeed(source.url);
+        const candidateIds = items.map((i) => i.video_id);
+        const existingIds = await getExistingVideoIds(db, candidateIds);
+
         for (const item of items) {
-          const exists = await videoIdExists(db, item.video_id);
-          if (exists) continue;
+          if (existingIds.has(item.video_id)) continue;
 
           const video: Video = {
             id: crypto.randomUUID(),
