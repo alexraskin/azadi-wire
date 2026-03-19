@@ -72,7 +72,6 @@ const articleJsonLd = !fetchError && article ? {
           src={article.thumbnail_url}
           alt={article.title}
           class="article-detail-thumb"
-          loading="lazy"
           style="display:none"
           onload="this.style.display=''"
           onerror="this.remove()"
