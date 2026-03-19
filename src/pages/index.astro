@@ -129,7 +129,9 @@ function pageUrl(p: number): string {
                 alt={article.title}
                 class="top-story-thumb"
                 loading="lazy"
-                onerror="this.style.display='none'"
+                style="display:none"
+                onload="this.style.display=''"
+                onerror="this.remove()"
               />
             )}
             <div class="top-story-body">
@@ -183,14 +185,16 @@ function pageUrl(p: number): string {
   ) : (
     <ul class="article-list">
       {articles.map((article) => (
-        <li class:list={['article-item', { 'has-thumb': !!article.thumbnail_url }]}>
+        <li class="article-item">
           {article.thumbnail_url && (
             <img
               src={article.thumbnail_url}
               alt={article.title}
               class="article-thumb"
               loading="lazy"
-              onerror="this.style.display='none';this.parentElement.classList.remove('has-thumb')"
+              style="display:none"
+              onload="this.style.display='';this.parentElement.classList.add('has-thumb')"
+              onerror="this.remove()"
             />
           )}
           <div class="article-body">

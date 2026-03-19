@@ -73,7 +73,9 @@ const articleJsonLd = !fetchError && article ? {
           alt={article.title}
           class="article-detail-thumb"
           loading="lazy"
-          onerror="this.style.display='none'"
+          style="display:none"
+          onload="this.style.display=''"
+          onerror="this.remove()"
         />
       )}
       {article.summary && (
