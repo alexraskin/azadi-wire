@@ -17,6 +17,7 @@ export async function fetchRSS(feedUrl: string): Promise<FeedItem[]> {
       const title = entry.title?.trim();
       const link = entry.link?.trim();
       if (!title || !link) continue;
+      if (isSpanish(title, link)) continue;
 
       items.push({
         title,
@@ -187,6 +188,35 @@ function extractSummary(html: string | null): string | null {
   const sentences = text.match(/[^.!?]+[.!?]+/g);
   if (!sentences) return text.slice(0, 300);
   return sentences.slice(0, 3).join(' ').trim();
+}
+
+const SPANISH_WORDS = new Set([
+  'según', 'para', 'sobre', 'también', 'entre', 'puede', 'como',
+  'más', 'pero', 'este', 'esta', 'estos', 'estas', 'después',
+  'gobierno', 'país', 'desde', 'tiene', 'años', 'dice', 'contra',
+  'muy', 'todo', 'otra', 'otro', 'fueron', 'sido', 'durante',
+  'mientras', 'hacia', 'porque', 'aunque', 'donde', 'están',
+  'había', 'podría', 'además', 'mediante', 'según', 'tras',
+]);
+
+function isSpanish(title: string, url: string): boolean {
+  // NYT Spanish edition URLs contain /es/ path segment
+  try {
+    const path = new URL(url).pathname;
+    if (/^\/es\//.test(path)) return true;
+  } catch {
+    // invalid URL, skip check
+  }
+
+  // Check title for common Spanish words (need 2+ matches to avoid false positives)
+  const words = title.toLowerCase().split(/\s+/);
+  let matches = 0;
+  for (const word of words) {
+    if (SPANISH_WORDS.has(word)) matches++;
+    if (matches >= 2) return true;
+  }
+
+  return false;
 }
 
 function parseDate(dateStr: string): string {
