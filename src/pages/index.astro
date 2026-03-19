@@ -123,17 +123,6 @@ function pageUrl(p: number): string {
       <div class="top-stories-grid">
         {topStories.map((article) => (
           <a href={`/article/${article.slug || article.id}`} class="top-story-card">
-            {article.thumbnail_url && (
-              <img
-                src={article.thumbnail_url}
-                alt={article.title}
-                class="top-story-thumb"
-                loading="lazy"
-                style="display:none"
-                onload="this.style.display=''"
-                onerror="this.remove()"
-              />
-            )}
             <div class="top-story-body">
               <span class="top-story-headline">{article.title}</span>
               <span class="top-story-meta">
@@ -191,7 +180,6 @@ function pageUrl(p: number): string {
               src={article.thumbnail_url}
               alt={article.title}
               class="article-thumb"
-              loading="lazy"
               style="display:none"
               onload="this.style.display='';this.parentElement.classList.add('has-thumb')"
               onerror="this.remove()"

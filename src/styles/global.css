@@ -734,13 +734,6 @@ a:hover {
   text-decoration: underline;
 }
 
-.top-story-thumb {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  background: var(--badge-bg);
-}
-
 .top-story-body {
   display: flex;
   flex-direction: column;
