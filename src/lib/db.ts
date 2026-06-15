@@ -1,4 +1,5 @@
 import type { Article, Source, TopicCount, DailyDigest, Video } from './types';
+import { TOPICS } from './types';
 
 type D1Database = {
   prepare(query: string): D1PreparedStatement;
@@ -39,6 +40,9 @@ export async function getArticles(
   const params: unknown[] = [];
 
   if (opts.topic && opts.topic !== 'all') {
+    if (!(TOPICS as string[]).includes(opts.topic)) {
+      return { articles: [], total: 0, page, pages: 0 };
+    }
     conditions.push('topic = ?');
     params.push(opts.topic);
   }

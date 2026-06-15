@@ -16,7 +16,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
     return Response.redirect(`${url.origin}/unsubscribe?error=server`, 303);
   }
 
-  await resend.contacts.remove({ audienceId, email });
+  const { error } = await resend.contacts.remove({ audienceId, email });
+  if (error) {
+    console.error('Unsubscribe failed:', error);
+    return Response.redirect(`${url.origin}/unsubscribe?error=server`, 303);
+  }
 
   return Response.redirect(`${url.origin}/unsubscribe?success=true`, 303);
 };
@@ -32,7 +36,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response('', { status: 400 });
   }
 
-  await resend.contacts.remove({ audienceId, email });
+  const { error } = await resend.contacts.remove({ audienceId, email });
+  if (error) {
+    console.error('Unsubscribe failed:', error);
+    return new Response('', { status: 502 });
+  }
 
   return new Response('', { status: 200 });
 };

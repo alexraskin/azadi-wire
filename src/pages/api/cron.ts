@@ -1,15 +1,13 @@
 import type { APIRoute } from 'astro';
 import { runFetcher } from '../../lib/fetcher';
 import { getWriteDB } from '../../lib/db';
+import { checkBearerAuth } from '../../lib/auth';
 
 export const GET: APIRoute = async ({ request, locals }) => {
   const env = (locals as any).runtime.env;
   const ctx = (locals as any).runtime.ctx;
 
-  const secret = env.CRON_SECRET;
-  const authHeader = request.headers.get('authorization') ?? '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-  if (!secret || !token || token !== secret) {
+  if (!checkBearerAuth(request, env.CRON_SECRET)) {
     return new Response('Unauthorized', { status: 401 });
   }
 

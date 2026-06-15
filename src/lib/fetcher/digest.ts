@@ -2,6 +2,7 @@ import type { Article, DailyDigest, Topic } from '../types';
 import { TOPIC_LABELS, TOPICS } from '../types';
 import { digestExistsForDate, getTodayArticles, getTopArticles, insertDigest } from '../db';
 import { getResendClient, type ResendEnv } from '../resend';
+import { formatDate } from '../time';
 
 const SYSTEM_PROMPT =
   'You are a news editor summarising the day\'s Iran-related news. ' +
@@ -91,11 +92,6 @@ function htmlEscape(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
-}
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00Z');
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
 }
 
 function buildTopArticlesHtml(articles: Article[]): string {
