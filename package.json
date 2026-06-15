@@ -1,7 +1,7 @@
 {
 	"name": "azadiwire",
 	"type": "module",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"scripts": {
 		"dev": "astro dev",
 		"build": "astro build && node scripts/patch-worker.mjs",
