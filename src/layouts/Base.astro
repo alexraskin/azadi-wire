@@ -1,5 +1,9 @@
 ---
 import '../styles/global.css';
+import pkg from '../../package.json';
+
+const VERSION = pkg.version;
+const COMMIT_SHA = import.meta.env.PUBLIC_COMMIT_SHA;
 
 interface Props {
   title: string;
@@ -126,6 +130,7 @@ function jsonLdToString(data: Record<string, any>): string {
           <a href="/rss">RSS</a>
           · <a href="/terms">Terms</a>
           · <a href="https://github.com/alexraskin/azadi-wire" target="_blank" rel="noopener noreferrer">GitHub</a>
+          · <span class="footer-version">v{VERSION}{COMMIT_SHA ? ` (${COMMIT_SHA})` : ''}</span>
         </p>
       </div>
     </footer>

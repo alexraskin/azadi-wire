@@ -137,6 +137,10 @@ a:hover {
   margin-top: 6px;
 }
 
+.footer-version {
+  color: var(--text-muted);
+}
+
 .header-right {
   display: flex;
   align-items: center;
