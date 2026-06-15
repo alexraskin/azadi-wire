@@ -85,6 +85,14 @@ function buildFallbackDigest(articles: Article[]): DigestResponse {
   return { overall, topics };
 }
 
+function htmlEscape(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00Z');
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
@@ -98,8 +106,8 @@ function buildTopArticlesHtml(articles: Article[]): string {
     const label = TOPIC_LABELS[a.topic as Topic] || a.topic;
     const url = `https://azadiwire.org/article/${a.slug || a.id}`;
     rows += `<tr><td style="padding:8px 0;border-bottom:1px solid #f0f0f0">` +
-      `<a href="${url}" style="color:#111;font-weight:600;text-decoration:none">${a.title}</a>` +
-      `<br><span style="font-size:12px;color:#999">${a.source_name} &middot; ${label}</span>` +
+      `<a href="${url}" style="color:#111;font-weight:600;text-decoration:none">${htmlEscape(a.title)}</a>` +
+      `<br><span style="font-size:12px;color:#999">${htmlEscape(a.source_name)} &middot; ${label}</span>` +
       `</td></tr>`;
   }
 
@@ -118,14 +126,14 @@ function buildDigestEmailHtml(digest: DailyDigest, topArticles: Article[]): stri
   let topicHtml = '';
   for (const [topic, summary] of Object.entries(topics)) {
     const label = TOPIC_LABELS[topic as Topic] || topic;
-    topicHtml += `<tr><td style="padding:12px 0;border-bottom:1px solid #e5e5e5"><strong>${label}</strong><br>${summary}</td></tr>`;
+    topicHtml += `<tr><td style="padding:12px 0;border-bottom:1px solid #e5e5e5"><strong>${label}</strong><br>${htmlEscape(summary)}</td></tr>`;
   }
 
   return `
 <div style="max-width:600px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#111;line-height:1.6">
   <h2 style="margin:0 0 4px">Azadi Wire Daily Digest</h2>
   <p style="color:#666;margin:0 0 20px;font-size:14px">${date} &middot; ${digest.article_count} articles</p>
-  <p>${digest.overall_summary}</p>
+  <p>${htmlEscape(digest.overall_summary)}</p>
   ${topArticlesHtml}
   <table style="width:100%;border-collapse:collapse;margin:24px 0">${topicHtml}</table>
   <p style="margin:24px 0 0"><a href="https://azadiwire.org/digest/${digest.digest_date}" style="color:#111;font-weight:600">Read full digest on the web &rarr;</a></p>

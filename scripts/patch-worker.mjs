@@ -26,10 +26,18 @@ const _patched = {
 export { _patched as default, pageMap };
 `;
 
-code = code.replace(
+const patched = code.replace(
   /export\s*\{\s*__astrojsSsrVirtualEntry\s+as\s+default\s*,\s*pageMap\s*\}\s*;/,
   scheduledHandler
 );
 
-writeFileSync(WORKER_PATH, code, 'utf-8');
+if (patched === code) {
+  console.error(
+    'ERROR: Patch target not found in worker bundle. Cron scheduled() handler NOT installed. ' +
+      'Astro may have changed its export signature — update the regex in scripts/patch-worker.mjs.'
+  );
+  process.exit(1);
+}
+
+writeFileSync(WORKER_PATH, patched, 'utf-8');
 console.log('Patched worker with scheduled handler.');
