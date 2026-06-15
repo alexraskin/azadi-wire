@@ -1,6 +1,6 @@
 import type { Article, Source, Video } from '../types';
 import { slugify } from '../types';
-import { getActiveSources, getExistingArticleUrls, getTodayTitles, insertArticle, deleteOldArticles, insertFetcherRun, getExistingVideoIds, insertVideo, deleteOldVideos } from '../db';
+import { getActiveSources, getExistingArticleUrls, getTodayTitles, insertArticlesBatch, deleteOldArticles, insertFetcherRun, getExistingVideoIds, insertVideo, deleteOldVideos } from '../db';
 import { fetchRSS } from './rss';
 import { scrapePage } from './scraper';
 import { categorize } from './categorizer';
@@ -37,12 +37,11 @@ export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ insert
           newItems.map((item) => categorize(item.title, item.summary, ai))
         );
 
-        for (let i = 0; i < newItems.length; i++) {
-          const item = newItems[i];
+        const articles: Article[] = newItems.map((item, i) => {
           const { topic, importance } = categorized[i];
           const id = crypto.randomUUID();
           const slug = `${slugify(item.title)}-${id.slice(0, 6)}`;
-          const article: Article = {
+          return {
             id,
             slug,
             title: item.title,
@@ -56,10 +55,10 @@ export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ insert
             topic,
             importance_score: importance,
           };
+        });
 
-          await insertArticle(db, article);
-          inserted++;
-        }
+        await insertArticlesBatch(db, articles);
+        inserted += articles.length;
       } catch {
         errors++;
       }

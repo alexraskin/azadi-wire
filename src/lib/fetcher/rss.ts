@@ -159,12 +159,12 @@ function parseWidth(tag: string): number {
   return w ? parseInt(w[1], 10) : 0;
 }
 
-function decodeEntities(str: string): string {
-  let prev = '';
+function decodeEntities(str: string, maxPasses = 5): string {
   let current = str;
-  while (current !== prev) {
-    prev = current;
-    current = decode(current);
+  for (let i = 0; i < maxPasses; i++) {
+    const decoded = decode(current);
+    if (decoded === current) break;
+    current = decoded;
   }
   return current;
 }

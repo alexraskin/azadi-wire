@@ -1,4 +1,4 @@
-import type { Article, Source, TopicCount, Topic, DailyDigest, Video } from './types';
+import type { Article, Source, TopicCount, DailyDigest, Video } from './types';
 
 type D1Database = {
   prepare(query: string): D1PreparedStatement;
@@ -117,30 +117,42 @@ export async function articleUrlExists(
   return row !== null;
 }
 
+// SQLite caps bound parameters per statement (SQLITE_LIMIT_VARIABLE_NUMBER,
+// default 999). Chunk IN-clause lookups so a single oversized feed can't throw.
+const IN_CLAUSE_CHUNK = 500;
+
 export async function getExistingArticleUrls(
   db: D1Database,
   urls: string[]
 ): Promise<Set<string>> {
-  if (urls.length === 0) return new Set();
-  const placeholders = urls.map(() => '?').join(', ');
-  const result = await db
-    .prepare(`SELECT article_url FROM articles WHERE article_url IN (${placeholders})`)
-    .bind(...urls)
-    .all<{ article_url: string }>();
-  return new Set(result.results.map((r) => r.article_url));
+  const existing = new Set<string>();
+  for (let i = 0; i < urls.length; i += IN_CLAUSE_CHUNK) {
+    const chunk = urls.slice(i, i + IN_CLAUSE_CHUNK);
+    const placeholders = chunk.map(() => '?').join(', ');
+    const result = await db
+      .prepare(`SELECT article_url FROM articles WHERE article_url IN (${placeholders})`)
+      .bind(...chunk)
+      .all<{ article_url: string }>();
+    for (const r of result.results) existing.add(r.article_url);
+  }
+  return existing;
 }
 
 export async function getExistingVideoIds(
   db: D1Database,
   videoIds: string[]
 ): Promise<Set<string>> {
-  if (videoIds.length === 0) return new Set();
-  const placeholders = videoIds.map(() => '?').join(', ');
-  const result = await db
-    .prepare(`SELECT video_id FROM videos WHERE video_id IN (${placeholders})`)
-    .bind(...videoIds)
-    .all<{ video_id: string }>();
-  return new Set(result.results.map((r) => r.video_id));
+  const existing = new Set<string>();
+  for (let i = 0; i < videoIds.length; i += IN_CLAUSE_CHUNK) {
+    const chunk = videoIds.slice(i, i + IN_CLAUSE_CHUNK);
+    const placeholders = chunk.map(() => '?').join(', ');
+    const result = await db
+      .prepare(`SELECT video_id FROM videos WHERE video_id IN (${placeholders})`)
+      .bind(...chunk)
+      .all<{ video_id: string }>();
+    for (const r of result.results) existing.add(r.video_id);
+  }
+  return existing;
 }
 
 export async function getTodayTitles(db: D1Database): Promise<string[]> {
@@ -176,6 +188,38 @@ export async function insertArticle(
       article.importance_score
     )
     .run();
+}
+
+// Insert many articles in a single D1 round-trip. Uses INSERT OR IGNORE, so the
+// returned count is the number submitted, not the number actually inserted
+// (skipped duplicates are not reflected in batch meta).
+export async function insertArticlesBatch(
+  db: D1Database,
+  articles: Article[]
+): Promise<void> {
+  if (articles.length === 0) return;
+  const stmts = articles.map((article) =>
+    db
+      .prepare(
+        `INSERT OR IGNORE INTO articles (id, slug, title, summary, source_name, source_url, article_url, thumbnail_url, published_at, fetched_at, topic, importance_score)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .bind(
+        article.id,
+        article.slug,
+        article.title,
+        article.summary,
+        article.source_name,
+        article.source_url,
+        article.article_url,
+        article.thumbnail_url,
+        article.published_at,
+        article.fetched_at,
+        article.topic,
+        article.importance_score
+      )
+  );
+  await db.batch(stmts);
 }
 
 export async function getTopArticles(
