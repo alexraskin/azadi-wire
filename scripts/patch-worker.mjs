@@ -17,7 +17,9 @@ const _patched = {
   fetch: _original.fetch.bind(_original),
   async scheduled(controller, env, ctx) {
     const token = env.CRON_SECRET || '';
-    const request = new Request('http://localhost/api/cron?token=' + encodeURIComponent(token));
+    const request = new Request('http://localhost/api/cron', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
     await _original.fetch(request, env, { waitUntil: ctx.waitUntil.bind(ctx) });
   }
 };

@@ -1,21 +1,33 @@
 ---
 import Base from '../layouts/Base.astro';
 import { getAllSources, getReadDB } from '../lib/db';
+import type { Source } from '../lib/types';
 
 const db = getReadDB((Astro.locals as any).runtime.env);
-const sources = await getAllSources(db);
+
+let sources: Source[] = [];
+let fetchError = false;
+try {
+  sources = await getAllSources(db);
+} catch {
+  fetchError = true;
+}
 ---
 
 <Base title="Sources" description="News sources aggregated by Azadi Wire — 20+ independent outlets covering Iran.">
   <h1 class="page-title">Sources</h1>
-  <ul class="source-list">
-    {sources.map((source) => (
-      <li class="source-item">
-        <a href={source.url} target="_blank" rel="noopener noreferrer">
-          {source.name}
-        </a>
-        <span class="badge">{source.type.toUpperCase()}</span>
-      </li>
-    ))}
-  </ul>
+  {fetchError ? (
+    <p>Unable to load sources right now. Please try again later.</p>
+  ) : (
+    <ul class="source-list">
+      {sources.map((source) => (
+        <li class="source-item">
+          <a href={source.url} target="_blank" rel="noopener noreferrer">
+            {source.name}
+          </a>
+          <span class="badge">{source.type.toUpperCase()}</span>
+        </li>
+      ))}
+    </ul>
+  )}
 </Base>

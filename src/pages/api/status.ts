@@ -4,8 +4,9 @@ import { getRecentFetcherRuns, getReadDB } from '../../lib/db';
 export const GET: APIRoute = async ({ request, locals }) => {
   const env = (locals as any).runtime.env;
   const secret = env.CRON_SECRET;
-  const token = new URL(request.url).searchParams.get('token');
-  if (!secret || token !== secret) {
+  const authHeader = request.headers.get('authorization') ?? '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!secret || !token || token !== secret) {
     return new Response('Unauthorized', { status: 401 });
   }
 
