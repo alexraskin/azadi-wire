@@ -40,6 +40,12 @@ function isActive(href: string): boolean {
   if (href === '/') return pathname === '/';
   return pathname.startsWith(href);
 }
+
+// Serialize JSON-LD for embedding in a <script> tag. Escaping '<' prevents a
+// title or summary containing '</script>' from breaking out of the block.
+function jsonLdToString(data: Record<string, any>): string {
+  return JSON.stringify(data).replace(/</g, '\\u003c');
+}
 ---
 
 <html lang="en">
@@ -76,8 +82,8 @@ function isActive(href: string): boolean {
     <link rel="alternate" type="application/rss+xml" title="Azadi Wire – Top Stories" href="/top.xml" />
     <link rel="canonical" href={canonicalUrl} />
     <title>{pageTitle}</title>
-    <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
-    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+    <script type="application/ld+json" set:html={jsonLdToString(websiteJsonLd)} />
+    {jsonLd && <script type="application/ld+json" set:html={jsonLdToString(jsonLd)} />}
   </head>
   <body>
     <header class="site-header">

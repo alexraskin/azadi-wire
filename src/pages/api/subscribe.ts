@@ -72,7 +72,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const fromEmail: string | undefined = env.RESEND_FROM_EMAIL;
-  const unsubscribeUrl = `https://azadiwire.org/api/unsubscribe?email=${encodeURIComponent(email)}`;
+  const origin = new URL(request.url).origin;
+  const unsubscribeUrl = `${origin}/api/unsubscribe?email=${encodeURIComponent(email)}`;
   const welcomePayload = {
     from: fromEmail ?? 'Azadi Wire <onboarding@resend.dev>',
     to: [email],
@@ -92,6 +93,5 @@ export const POST: APIRoute = async ({ request, locals }) => {
     console.error('Welcome email failed:', emailError.message, emailError.name);
   }
 
-  const origin = new URL(request.url).origin;
   return Response.redirect(`${origin}/subscribe?success=true`, 303);
 };

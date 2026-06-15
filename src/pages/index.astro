@@ -14,7 +14,7 @@ const page = parseInt(url.searchParams.get('page') || '1', 10);
 const db = getReadDB((Astro.locals as any).runtime.env);
 
 const isSearching = currentQuery.length > 0;
-let articles: any[] = [];
+let articles: Article[] = [];
 let total = 0;
 let pages = 0;
 let sourceNames: string[] = [];

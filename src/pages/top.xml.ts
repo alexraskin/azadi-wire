@@ -22,7 +22,9 @@ export const GET = async ({ locals }: { locals: any }) => {
       pubDate: new Date(a.published_at),
       categories: [TOPIC_LABELS[a.topic as Topic] || a.topic],
       customData: [
-        `<source url="${a.source_url ?? ''}">${a.source_name}</source>`,
+        a.source_url
+          ? `<source url="${a.source_url}">${a.source_name}</source>`
+          : `<source>${a.source_name}</source>`,
         a.thumbnail_url
           ? `<media:content url="${a.thumbnail_url}" medium="image" />`
           : '',
