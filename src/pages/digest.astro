@@ -3,8 +3,9 @@ import Base from '../layouts/Base.astro';
 import { getDigestByDate, getRecentDigests, getReadDB } from '../lib/db';
 import { TOPIC_LABELS } from '../lib/types';
 import type { Topic } from '../lib/types';
+import { env } from 'cloudflare:workers';
 
-const db = getReadDB((Astro.locals as any).runtime.env);
+const db = getReadDB(env);
 
 const today = new Date().toISOString().slice(0, 10);
 let fetchError = false;

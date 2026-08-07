@@ -2,8 +2,9 @@
 import Base from '../layouts/Base.astro';
 import { getAllSources, getReadDB } from '../lib/db';
 import type { Source } from '../lib/types';
+import { env } from 'cloudflare:workers';
 
-const db = getReadDB((Astro.locals as any).runtime.env);
+const db = getReadDB(env);
 
 let sources: Source[] = [];
 let fetchError = false;

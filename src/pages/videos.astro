@@ -3,12 +3,13 @@ import Base from '../layouts/Base.astro';
 import { getVideos, getVideoChannelNames, getReadDB } from '../lib/db';
 import { relativeTime } from '../lib/time';
 import type { Video } from '../lib/types';
+import { env } from 'cloudflare:workers';
 
 const url = Astro.url;
 const currentChannel = url.searchParams.get('channel') || '';
 const page = parseInt(url.searchParams.get('page') || '1', 10);
 
-const db = getReadDB((Astro.locals as any).runtime.env);
+const db = getReadDB(env);
 
 let videos: Video[] = [];
 let total = 0;

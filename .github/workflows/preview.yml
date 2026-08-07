@@ -40,14 +40,12 @@ jobs:
           WORKERS_CI_COMMIT_SHA: ${{ github.sha }}
         run: npm run build
 
-      # Uploads a new version without shifting production traffic to it, and
-      # without touching the cron triggers (only `wrangler deploy` does that).
       - name: Upload preview version
         id: upload
         run: |
           set -o pipefail
           alias="pr-${{ github.event.pull_request.number }}"
-          npx wrangler versions upload --preview-alias "$alias" --keep-vars 2>&1 | tee upload.log
+          npx wrangler versions upload -c dist/server/wrangler.json --preview-alias "$alias" --keep-vars 2>&1 | tee upload.log
           url=$(grep -oE "https://${alias}-[a-z0-9.-]+\.workers\.dev" upload.log | head -1)
           if [ -z "$url" ]; then
             url=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' upload.log | head -1)

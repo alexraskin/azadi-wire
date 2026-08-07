@@ -1,4 +1,5 @@
 import { getReadDB } from '../lib/db';
+import { env } from 'cloudflare:workers';
 
 const SITE_URL = 'https://azadiwire.org';
 
@@ -11,7 +12,7 @@ function xmlEscape(s: string): string {
 }
 
 export const GET = async ({ locals }: { locals: any }) => {
-  const db = getReadDB(locals.runtime.env);
+  const db = getReadDB(env);
 
   const [articles, digests] = await Promise.all([
     db

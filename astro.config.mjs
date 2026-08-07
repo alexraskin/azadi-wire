@@ -21,11 +21,11 @@ export default defineConfig({
   site: 'https://azadiwire.org',
   output: 'server',
   adapter: cloudflare({
-    platformProxy: {
-      enabled: true,
-    },
     imageService: 'cloudflare',
   }),
+  // The app stores no session state. Left on, the Cloudflare adapter injects a
+  // "SESSION" KV binding with no namespace id, which deploys cannot resolve.
+  session: false,
   integrations: [sitemap()],
   vite: {
     define: {

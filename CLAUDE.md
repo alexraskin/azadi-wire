@@ -318,6 +318,8 @@ When adding new API endpoints, ensure they are included in the noindex middlewar
 npm run deploy
 ```
 
-This runs `astro build`, then `scripts/patch-worker.mjs` (injects the `scheduled()` cron handler into the compiled worker), then `wrangler deploy`.
+This runs `astro build`, then `scripts/patch-worker.mjs` (injects the `scheduled()` cron handler into the compiled worker at `dist/server/entry.mjs`), then `wrangler deploy -c dist/server/wrangler.json`.
+
+The adapter builds to `dist/client` (static assets) and `dist/server` (worker), and writes a fully resolved `dist/server/wrangler.json` — that generated file is what deploys use. The root `wrangler.jsonc` therefore must **not** set `main`: it is validated before the build exists, which breaks clean checkouts (CI).
 
 The patch step is required because Astro does not natively support Cloudflare's `scheduled()` export for cron triggers. The script appends the handler to the built worker bundle.

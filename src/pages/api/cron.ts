@@ -2,10 +2,10 @@ import type { APIRoute } from 'astro';
 import { runFetcher } from '../../lib/fetcher';
 import { getWriteDB } from '../../lib/db';
 import { checkBearerAuth } from '../../lib/auth';
+import { env } from 'cloudflare:workers';
 
 export const GET: APIRoute = async ({ request, locals }) => {
-  const env = (locals as any).runtime.env;
-  const ctx = (locals as any).runtime.ctx;
+  const ctx = (locals as any).cfContext;
 
   if (!checkBearerAuth(request, env.CRON_SECRET)) {
     return new Response('Unauthorized', { status: 401 });

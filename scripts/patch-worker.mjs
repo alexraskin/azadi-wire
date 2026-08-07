@@ -6,14 +6,21 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const WORKER_PATH = 'dist/_worker.js/index.js';
+const WORKER_PATH = 'dist/server/entry.mjs';
 
 let code = readFileSync(WORKER_PATH, 'utf-8');
 
-const scheduledHandler = `
+// Astro exports the worker entry as `export { <name> as default };`. The
+// generated name changes between Astro versions, so capture it.
+const EXPORT_DEFAULT = /export\s*\{\s*([A-Za-z0-9_$]+)\s+as\s+default\s*\}\s*;/;
+
+const patched = code.replace(
+  EXPORT_DEFAULT,
+  (_match, entryName) => `
 // --- Patched: scheduled handler for cron triggers ---
-const _original = __astrojsSsrVirtualEntry;
+const _original = ${entryName};
 const _patched = {
+  ..._original,
   fetch: _original.fetch.bind(_original),
   async scheduled(controller, env, ctx) {
     const token = env.CRON_SECRET || '';
@@ -23,12 +30,8 @@ const _patched = {
     await _original.fetch(request, env, { waitUntil: ctx.waitUntil.bind(ctx) });
   }
 };
-export { _patched as default, pageMap };
-`;
-
-const patched = code.replace(
-  /export\s*\{\s*__astrojsSsrVirtualEntry\s+as\s+default\s*,\s*pageMap\s*\}\s*;/,
-  scheduledHandler
+export { _patched as default };
+`
 );
 
 if (patched === code) {
