@@ -5,15 +5,15 @@
 	"scripts": {
 		"dev": "astro dev",
 		"build": "astro build && node scripts/patch-worker.mjs",
-		"preview": "npm run build && wrangler dev",
+		"preview": "npm run build && wrangler dev -c dist/server/wrangler.json",
 		"astro": "astro",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"deploy": "npm run build && wrangler deploy",
+		"deploy": "npm run build && wrangler deploy -c dist/server/wrangler.json",
 		"cf-typegen": "wrangler types",
 		"migrate": "wrangler d1 migrations apply azadi-wire-db --remote",
 		"migrate-local": "wrangler d1 migrations apply azadi-wire-db --local",
-    "staging": "wrangler versions upload --preview-alias staging"
+    "staging": "npm run build && wrangler versions upload -c dist/server/wrangler.json --preview-alias staging"
 	},
 	"dependencies": {
 		"@astrojs/cloudflare": "^14.2.0",
