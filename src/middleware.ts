@@ -1,4 +1,13 @@
 import { defineMiddleware } from 'astro:middleware';
+import {
+  CACHE_TTL,
+  VERSION_TTL_MS,
+  cacheKeyUrl,
+  htmlCacheControl,
+  isCacheablePath,
+  isCacheableResponse,
+} from './lib/cache';
+import { getContentVersion, getReadDB } from './lib/db';
 
 const ALLOWED_ORIGINS = [
   'https://azadiwire.org',
@@ -37,7 +46,37 @@ function isAllowedOrigin(origin: string | null, requestUrl: string): boolean {
   return false;
 }
 
-export const onRequest = defineMiddleware(async ({ request, url }, next) => {
+/**
+ * Worker-generated responses are not stored in Cloudflare's edge cache
+ * automatically, so we do it explicitly with the Cache API. Cache-Control
+ * headers on the stored response decide its TTL.
+ */
+function edgeCache(): Cache | null {
+  if (typeof caches === 'undefined') return null;
+  return (caches as any).default ?? null;
+}
+
+// Per-isolate memo so the version lookup costs at most one D1 read per
+// VERSION_TTL_MS, not one per request.
+let versionCache: { value: string; expires: number } | null = null;
+
+async function contentVersion(env: any): Promise<string> {
+  const now = Date.now();
+  if (versionCache && versionCache.expires > now) return versionCache.value;
+
+  let value = 'none';
+  try {
+    value = (await getContentVersion(getReadDB(env))) ?? 'none';
+  } catch {
+    // D1 unavailable: fall back to a time bucket so caching still works.
+    value = `t${Math.floor(now / (CACHE_TTL * 1000))}`;
+  }
+
+  versionCache = { value, expires: now + VERSION_TTL_MS };
+  return value;
+}
+
+export const onRequest = defineMiddleware(async ({ request, url, locals }, next) => {
   if (request.method === 'POST') {
     const origin = request.headers.get('origin');
 
@@ -51,6 +90,28 @@ export const onRequest = defineMiddleware(async ({ request, url }, next) => {
     }
   }
 
+  const cacheable =
+    request.method === 'GET' &&
+    !request.headers.has('authorization') &&
+    isCacheablePath(url.pathname);
+
+  const cache = cacheable ? edgeCache() : null;
+  let cacheKey: Request | null = null;
+  let version: string | null = null;
+
+  if (cache) {
+    version = await contentVersion((locals as any).runtime?.env);
+    cacheKey = new Request(cacheKeyUrl(url.toString(), version), { method: 'GET' });
+
+    const hit = await cache.match(cacheKey);
+    if (hit) {
+      const headers = new Headers(hit.headers);
+      headers.set('X-Cache', 'HIT');
+      headers.set('X-Cache-Version', version);
+      return new Response(hit.body, { status: hit.status, headers });
+    }
+  }
+
   const response = await next();
 
   for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
@@ -59,6 +120,23 @@ export const onRequest = defineMiddleware(async ({ request, url }, next) => {
 
   if (url.pathname.startsWith('/api/')) {
     response.headers.set('X-Robots-Tag', 'noindex');
+  }
+
+  // SSR pages have no Cache-Control of their own; give them the edge TTL.
+  if (cacheable && !response.headers.has('cache-control')) {
+    response.headers.set('Cache-Control', htmlCacheControl(CACHE_TTL));
+  }
+
+  if (cache && cacheKey && isCacheableResponse(response)) {
+    response.headers.set('X-Cache', 'MISS');
+    if (version) response.headers.set('X-Cache-Version', version);
+    const stored = response.clone();
+    const waitUntil = (locals as any).runtime?.ctx?.waitUntil;
+    if (typeof waitUntil === 'function') {
+      waitUntil(cache.put(cacheKey, stored));
+    } else {
+      await cache.put(cacheKey, stored);
+    }
   }
 
   return response;

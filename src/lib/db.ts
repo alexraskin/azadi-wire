@@ -305,6 +305,20 @@ export async function insertFetcherRun(db: D1Database, run: FetcherRun): Promise
     .run();
 }
 
+/**
+ * Identifier of the newest fetcher run that actually added articles. Used as a
+ * cache-key version so a run with new content retires the previous cache
+ * entries instead of waiting out their TTL.
+ */
+export async function getContentVersion(db: D1Database): Promise<string | null> {
+  const row = await db
+    .prepare(
+      'SELECT id FROM fetcher_runs WHERE inserted > 0 ORDER BY started_at DESC LIMIT 1'
+    )
+    .first<{ id: string }>();
+  return row?.id ?? null;
+}
+
 export async function getRecentFetcherRuns(db: D1Database, limit: number = 10): Promise<FetcherRun[]> {
   const result = await db
     .prepare('SELECT * FROM fetcher_runs ORDER BY started_at DESC LIMIT ?')

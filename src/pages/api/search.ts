@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { searchArticles, getReadDB } from '../../lib/db';
+import { cacheControl } from '../../lib/cache';
 
 export const GET: APIRoute = async ({ url, locals }) => {
   const query = url.searchParams.get('q')?.trim();
@@ -19,7 +20,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
   return new Response(JSON.stringify(result), {
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'public, max-age=60, s-maxage=120',
+      'Cache-Control': cacheControl(),
     },
   });
 };

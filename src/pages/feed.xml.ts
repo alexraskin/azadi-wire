@@ -2,6 +2,7 @@ import rss from '@astrojs/rss';
 import { getArticles, getReadDB } from '../lib/db';
 import { TOPIC_LABELS } from '../lib/types';
 import type { Topic } from '../lib/types';
+import { cacheControl } from '../lib/cache';
 
 const SITE_URL = 'https://azadiwire.org';
 
@@ -9,7 +10,7 @@ export const GET = async ({ locals }: { locals: any }) => {
   const db = getReadDB(locals.runtime.env);
   const { articles } = await getArticles(db, { limit: 50 });
 
-  return rss({
+  const response = await rss({
     title: 'Azadi Wire',
     description: 'Independent English-language news aggregation focused on Iran',
     site: SITE_URL,
@@ -33,4 +34,7 @@ export const GET = async ({ locals }: { locals: any }) => {
         .join('\n      '),
     })),
   });
+
+  response.headers.set('Cache-Control', cacheControl());
+  return response;
 };
