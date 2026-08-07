@@ -1,0 +1,82 @@
+name: Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        env:
+          WORKERS_CI_COMMIT_SHA: ${{ github.sha }}
+        run: npm run build
+
+      # Uploads a new version without shifting production traffic to it, and
+      # without touching the cron triggers (only `wrangler deploy` does that).
+      - name: Upload preview version
+        id: upload
+        run: |
+          set -o pipefail
+          alias="pr-${{ github.event.pull_request.number }}"
+          npx wrangler versions upload --preview-alias "$alias" --keep-vars 2>&1 | tee upload.log
+          url=$(grep -oE "https://${alias}-[a-z0-9.-]+\.workers\.dev" upload.log | head -1)
+          if [ -z "$url" ]; then
+            url=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' upload.log | head -1)
+          fi
+          if [ -z "$url" ]; then
+            echo "could not find a preview URL in the wrangler output"
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test preview
+        run: |
+          url="${{ steps.upload.outputs.url }}"
+          for i in 1 2 3 4 5; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' "$url/")
+            [ "$code" = "200" ] && exit 0
+            echo "attempt $i: HTTP $code"
+            sleep 10
+          done
+          echo "preview did not return 200"
+          exit 1
+
+      - name: Comment preview URL
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          URL: ${{ steps.upload.outputs.url }}
+        run: |
+          body="Preview: $URL (commit ${GITHUB_SHA:0:7})
+
+          Runs against the production D1 database and no cron trigger."
+          gh pr comment "${{ github.event.pull_request.number }}" --edit-last --body "$body" \
+            || gh pr comment "${{ github.event.pull_request.number }}" --body "$body"
