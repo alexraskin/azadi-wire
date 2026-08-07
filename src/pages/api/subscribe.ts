@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getResendClient } from '../../lib/resend';
+import { env } from 'cloudflare:workers';
 
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
@@ -12,7 +13,6 @@ async function verifyTurnstile(token: string, secret: string, ip: string | null)
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env = (locals as any).runtime.env;
   const resend = getResendClient(env);
   const audienceId: string | undefined = env.RESEND_AUDIENCE_ID;
 

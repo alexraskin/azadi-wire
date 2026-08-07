@@ -3,11 +3,12 @@ import { getTopArticles, getReadDB } from '../lib/db';
 import { TOPIC_LABELS } from '../lib/types';
 import type { Topic } from '../lib/types';
 import { cacheControl } from '../lib/cache';
+import { env } from 'cloudflare:workers';
 
 const SITE_URL = 'https://azadiwire.org';
 
 export const GET = async ({ locals }: { locals: any }) => {
-  const db = getReadDB(locals.runtime.env);
+  const db = getReadDB(env);
   const articles = await getTopArticles(db, { limit: 20, hoursBack: 72, minScore: 5 });
 
   const response = await rss({

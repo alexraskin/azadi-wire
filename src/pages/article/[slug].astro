@@ -4,10 +4,11 @@ import { getArticleBySlug, getArticleById, getReadDB } from '../../lib/db';
 import { formatDate } from '../../lib/time';
 import { TOPIC_LABELS } from '../../lib/types';
 import type { Topic } from '../../lib/types';
+import { env } from 'cloudflare:workers';
 
 const SITE_URL = 'https://azadiwire.org';
 const { slug } = Astro.params;
-const db = getReadDB((Astro.locals as any).runtime.env);
+const db = getReadDB(env);
 
 let article: any = null;
 let fetchError = false;

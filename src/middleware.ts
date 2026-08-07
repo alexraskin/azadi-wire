@@ -8,6 +8,7 @@ import {
   isCacheableResponse,
 } from './lib/cache';
 import { getContentVersion, getReadDB } from './lib/db';
+import { env } from 'cloudflare:workers';
 
 const ALLOWED_ORIGINS = [
   'https://azadiwire.org',
@@ -52,6 +53,9 @@ function isAllowedOrigin(origin: string | null, requestUrl: string): boolean {
  * headers on the stored response decide its TTL.
  */
 function edgeCache(): Cache | null {
+  // Miniflare implements the Cache API locally, which would serve stale pages
+  // while editing, so only cache in real deployments.
+  if (import.meta.env.DEV) return null;
   if (typeof caches === 'undefined') return null;
   return (caches as any).default ?? null;
 }
@@ -60,7 +64,7 @@ function edgeCache(): Cache | null {
 // VERSION_TTL_MS, not one per request.
 let versionCache: { value: string; expires: number } | null = null;
 
-async function contentVersion(env: any): Promise<string> {
+async function contentVersion(): Promise<string> {
   const now = Date.now();
   if (versionCache && versionCache.expires > now) return versionCache.value;
 
@@ -100,7 +104,7 @@ export const onRequest = defineMiddleware(async ({ request, url, locals }, next)
   let version: string | null = null;
 
   if (cache) {
-    version = await contentVersion((locals as any).runtime?.env);
+    version = await contentVersion();
     cacheKey = new Request(cacheKeyUrl(url.toString(), version), { method: 'GET' });
 
     const hit = await cache.match(cacheKey);
@@ -131,9 +135,9 @@ export const onRequest = defineMiddleware(async ({ request, url, locals }, next)
     response.headers.set('X-Cache', 'MISS');
     if (version) response.headers.set('X-Cache-Version', version);
     const stored = response.clone();
-    const waitUntil = (locals as any).runtime?.ctx?.waitUntil;
-    if (typeof waitUntil === 'function') {
-      waitUntil(cache.put(cacheKey, stored));
+    const cfContext = (locals as any).cfContext;
+    if (typeof cfContext?.waitUntil === 'function') {
+      cfContext.waitUntil(cache.put(cacheKey, stored));
     } else {
       await cache.put(cacheKey, stored);
     }

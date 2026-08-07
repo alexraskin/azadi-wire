@@ -4,6 +4,7 @@ import { getArticles, searchArticles, getArticleSourceNames, getLatestVideos, ge
 import { relativeTime } from '../lib/time';
 import { TOPICS, TOPIC_LABELS } from '../lib/types';
 import type { Article, Topic, Video } from '../lib/types';
+import { env } from 'cloudflare:workers';
 
 const url = Astro.url;
 const currentTopic = url.searchParams.get('topic') || '';
@@ -11,7 +12,7 @@ const currentSource = url.searchParams.get('source') || '';
 const currentQuery = url.searchParams.get('q')?.trim() || '';
 const page = parseInt(url.searchParams.get('page') || '1', 10);
 
-const db = getReadDB((Astro.locals as any).runtime.env);
+const db = getReadDB(env);
 
 const isSearching = currentQuery.length > 0;
 let articles: Article[] = [];

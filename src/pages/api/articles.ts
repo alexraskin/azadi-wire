@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getArticles, getReadDB } from '../../lib/db';
 import { cacheControl } from '../../lib/cache';
+import { env } from 'cloudflare:workers';
 
 export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
@@ -9,7 +10,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const page = parseInt(url.searchParams.get('page') || '1', 10);
   const limit = parseInt(url.searchParams.get('limit') || '20', 10);
 
-  const db = getReadDB((locals as any).runtime.env);
+  const db = getReadDB(env);
   const result = await getArticles(db, { topic, source, page, limit });
 
   return new Response(JSON.stringify(result), {

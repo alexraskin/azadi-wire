@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 import { getResendClient } from '../../lib/resend';
+import { env } from 'cloudflare:workers';
 
 export const GET: APIRoute = async ({ request, locals }) => {
-  const env = (locals as any).runtime.env;
   const resend = getResendClient(env);
   const audienceId: string | undefined = env.RESEND_AUDIENCE_ID;
   const url = new URL(request.url);
@@ -26,7 +26,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env = (locals as any).runtime.env;
   const resend = getResendClient(env);
   const audienceId: string | undefined = env.RESEND_AUDIENCE_ID;
   const url = new URL(request.url);
