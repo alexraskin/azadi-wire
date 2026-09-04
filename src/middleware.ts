@@ -1,11 +1,17 @@
 import { defineMiddleware } from 'astro:middleware';
 import {
   CACHE_TTL,
+  NOT_FOUND_TTL,
   VERSION_TTL_MS,
-  cacheKeyUrl,
+  cacheProfile,
+  entryState,
+  fromStored,
   htmlCacheControl,
-  isCacheablePath,
   isCacheableResponse,
+  normalizeCacheKey,
+  prepareForStore,
+  ttlFor,
+  type CacheProfile,
 } from './lib/cache';
 import { getContentVersion, getReadDB } from './lib/db';
 import { env } from 'cloudflare:workers';
@@ -60,24 +66,79 @@ function edgeCache(): Cache | null {
   return (caches as any).default ?? null;
 }
 
+type ExecutionCtx = { waitUntil(promise: Promise<unknown>): void } | undefined;
+
+function background(ctx: ExecutionCtx, work: Promise<unknown>): boolean {
+  if (typeof ctx?.waitUntil !== 'function') return false;
+  ctx.waitUntil(work.catch(() => {}));
+  return true;
+}
+
 // Per-isolate memo so the version lookup costs at most one D1 read per
 // VERSION_TTL_MS, not one per request.
 let versionCache: { value: string; expires: number } | null = null;
+let versionRefresh: Promise<string> | null = null;
 
-async function contentVersion(): Promise<string> {
-  const now = Date.now();
-  if (versionCache && versionCache.expires > now) return versionCache.value;
+function readContentVersion(): Promise<string> {
+  if (versionRefresh) return versionRefresh;
+  versionRefresh = (async () => {
+    const now = Date.now();
+    let value: string;
+    try {
+      value = (await getContentVersion(getReadDB(env))) ?? 'none';
+    } catch {
+      // D1 unavailable: fall back to a time bucket so caching still works.
+      value = `t${Math.floor(now / (CACHE_TTL * 1000))}`;
+    }
+    versionCache = { value, expires: Date.now() + VERSION_TTL_MS };
+    return value;
+  })().finally(() => {
+    versionRefresh = null;
+  });
+  return versionRefresh;
+}
 
-  let value = 'none';
-  try {
-    value = (await getContentVersion(getReadDB(env))) ?? 'none';
-  } catch {
-    // D1 unavailable: fall back to a time bucket so caching still works.
-    value = `t${Math.floor(now / (CACHE_TTL * 1000))}`;
+/**
+ * Current content version. An expired memo is still served while the reread
+ * runs behind the request, so only the first request in an isolate ever waits
+ * on D1 for it.
+ */
+async function contentVersion(ctx: ExecutionCtx): Promise<string> {
+  const cached = versionCache;
+  if (cached && cached.expires > Date.now()) return cached.value;
+  const refresh = readContentVersion();
+  if (cached && background(ctx, refresh)) return cached.value;
+  return refresh;
+}
+
+// Collapses concurrent re-renders of the same key within an isolate, so a
+// burst of requests on a stale entry renders the page once.
+const revalidating = new Map<string, Promise<unknown>>();
+
+function singleFlight(key: string, run: () => Promise<unknown>): Promise<unknown> {
+  const existing = revalidating.get(key);
+  if (existing) return existing;
+  const started = run().finally(() => revalidating.delete(key));
+  revalidating.set(key, started);
+  return started;
+}
+
+function decorate(response: Response, pathname: string, profile: CacheProfile | null): Response {
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    response.headers.set(key, value);
   }
 
-  versionCache = { value, expires: now + VERSION_TTL_MS };
-  return value;
+  if (pathname.startsWith('/api/')) {
+    response.headers.set('X-Robots-Tag', 'noindex');
+  }
+
+  // SSR pages have no Cache-Control of their own; give them the edge TTL.
+  if (profile && !response.headers.has('cache-control')) {
+    const ttl = response.status === 404 ? NOT_FOUND_TTL : profile.ttl;
+    response.headers.set('Cache-Control', htmlCacheControl(ttl));
+  }
+
+  return response;
 }
 
 export const onRequest = defineMiddleware(async ({ request, url, locals }, next) => {
@@ -94,54 +155,45 @@ export const onRequest = defineMiddleware(async ({ request, url, locals }, next)
     }
   }
 
-  const cacheable =
-    request.method === 'GET' &&
-    !request.headers.has('authorization') &&
-    isCacheablePath(url.pathname);
+  const cacheable = request.method === 'GET' && !request.headers.has('authorization');
+  const profile = cacheable ? cacheProfile(url.pathname) : null;
+  const cache = profile ? edgeCache() : null;
+  const ctx = (locals as any).cfContext as ExecutionCtx;
 
-  const cache = cacheable ? edgeCache() : null;
-  let cacheKey: Request | null = null;
-  let version: string | null = null;
+  if (!cache || !profile) {
+    return decorate(await next(), url.pathname, profile);
+  }
 
-  if (cache) {
-    version = await contentVersion();
-    cacheKey = new Request(cacheKeyUrl(url.toString(), version), { method: 'GET' });
+  const cacheKey = new Request(normalizeCacheKey(url.toString()), { method: 'GET' });
+  const version = profile.versioned ? await contentVersion(ctx) : null;
 
-    const hit = await cache.match(cacheKey);
-    if (hit) {
-      const headers = new Headers(hit.headers);
-      headers.set('X-Cache', 'HIT');
-      headers.set('X-Cache-Version', version);
-      return new Response(hit.body, { status: hit.status, headers });
+  const render = async (): Promise<Response> => {
+    const response = decorate(await next(), url.pathname, profile);
+    if (isCacheableResponse(response)) {
+      const stored = prepareForStore(response, {
+        version,
+        ttl: ttlFor(response.status, profile),
+      });
+      const put = cache.put(cacheKey, stored);
+      if (!background(ctx, put)) await put;
     }
-  }
+    return response;
+  };
 
-  const response = await next();
-
-  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
-    response.headers.set(key, value);
-  }
-
-  if (url.pathname.startsWith('/api/')) {
-    response.headers.set('X-Robots-Tag', 'noindex');
-  }
-
-  // SSR pages have no Cache-Control of their own; give them the edge TTL.
-  if (cacheable && !response.headers.has('cache-control')) {
-    response.headers.set('Cache-Control', htmlCacheControl(CACHE_TTL));
-  }
-
-  if (cache && cacheKey && isCacheableResponse(response)) {
-    response.headers.set('X-Cache', 'MISS');
-    if (version) response.headers.set('X-Cache-Version', version);
-    const stored = response.clone();
-    const cfContext = (locals as any).cfContext;
-    if (typeof cfContext?.waitUntil === 'function') {
-      cfContext.waitUntil(cache.put(cacheKey, stored));
-    } else {
-      await cache.put(cacheKey, stored);
+  const hit = await cache.match(cacheKey);
+  if (hit) {
+    const state = entryState(hit, version);
+    // A stale entry still answers the request; the fresh copy lands behind it.
+    // Without an execution context (local wrangler) there is nowhere to run
+    // that, so re-render inline instead of serving stale forever.
+    if (state === 'stale') {
+      if (typeof ctx?.waitUntil !== 'function') return render();
+      background(ctx, singleFlight(cacheKey.url, render));
     }
+    return fromStored(hit, state);
   }
 
+  const response = await render();
+  response.headers.set('X-Cache', 'MISS');
   return response;
 });

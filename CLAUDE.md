@@ -282,6 +282,32 @@ INSERT INTO sources (id, name, url, type, active) VALUES
 
 ---
 
+## Caching
+
+Worker responses are stored in the Cloudflare Cache API (`caches.default`) by `src/middleware.ts`; the policy lives in `src/lib/cache.ts`. Caching is disabled under `astro dev` so edits show up immediately.
+
+**Cache key** — origin + path + only the params that change output (`topic`, `source`, `page`, `limit`, `q`, `channel`), in fixed order. Tracking params (`utm_*`, `fbclid`, …) are dropped, so decorated links share one entry.
+
+**Profiles** (`cacheProfile()`):
+
+| Path | TTL | Versioned |
+|---|---|---|
+| `/article/*`, `/api/articles/*` | 24h | no |
+| `/digest/*` | 1h | no |
+| `/about`, `/terms`, `/rss`, `/bookmarks`, `/404` | 24h | no |
+| everything else cacheable | 15m | yes |
+| any 404 | 60s | — |
+
+Never cached: `/api/cron`, `/api/status`, `/api/subscribe`, `/api/unsubscribe`, `/subscribe`, `/unsubscribe`, any request carrying an `Authorization` header, and any non-GET request.
+
+**Stale-while-revalidate** — Cloudflare ignores the `stale-while-revalidate` directive on worker-generated responses, so freshness is tracked on the entry: it stores the content version it rendered from plus the instant it goes stale, and the entry itself is kept for TTL + 24h. A request finding a stale entry gets it immediately while the page re-renders in `waitUntil`. Concurrent requests in an isolate collapse into one re-render.
+
+**Versioning** — the content version is the id of the newest `fetcher_runs` row with `inserted > 0`, memoized per isolate for 30s and refreshed in the background. A run that inserts articles makes versioned entries stale, not missing, so no visitor waits for a cold render.
+
+**Adding endpoints or pages** — a new path falls into the versioned 15-minute profile by default. Add it to `UNCACHEABLE` if it is per-user, authenticated, or state-dependent. When a page renders an error state instead of content (a D1 failure), set `Astro.response.headers.set('Cache-Control', NO_STORE)` so the failure is not stored.
+
+---
+
 ## Security Conventions
 
 Defined in `src/middleware.ts`:

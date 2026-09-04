@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getArticleById, getArticleBySlug, getReadDB } from '../../../lib/db';
-import { cacheControl } from '../../../lib/cache';
+import { ARTICLE_TTL, cacheControl } from '../../../lib/cache';
 import { env } from 'cloudflare:workers';
 
 export const GET: APIRoute = async ({ params, locals }) => {
@@ -20,7 +20,8 @@ export const GET: APIRoute = async ({ params, locals }) => {
   return new Response(JSON.stringify(article), {
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': cacheControl(),
+      // An article never changes after insert.
+      'Cache-Control': cacheControl(ARTICLE_TTL),
     },
   });
 };

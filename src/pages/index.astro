@@ -5,6 +5,7 @@ import { relativeTime } from '../lib/time';
 import { TOPICS, TOPIC_LABELS } from '../lib/types';
 import type { Article, Topic, Video } from '../lib/types';
 import { env } from 'cloudflare:workers';
+import { NO_STORE } from '../lib/cache';
 
 const url = Astro.url;
 const currentTopic = url.searchParams.get('topic') || '';
@@ -47,6 +48,12 @@ try {
   topStories = top;
 } catch {
   fetchError = true;
+}
+
+// The error state is a transient database failure, not content. Keep it out of
+// the edge cache so the page recovers on the next request.
+if (fetchError) {
+  Astro.response.headers.set('Cache-Control', NO_STORE);
 }
 
 function filterUrl(opts: { topic?: string; source?: string }): string {
