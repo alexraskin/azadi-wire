@@ -7,6 +7,7 @@ import { categorize } from './categorizer';
 import { isDuplicate } from './dedup';
 import { maybeGenerateDigest } from './digest';
 import { fetchYouTubeFeed } from './youtube';
+import { MAX_FILLS_PER_RUN, deleteImages, storeImages } from './images';
 
 export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ inserted: number; errors: number }> {
   const startedAt = new Date();
@@ -19,6 +20,9 @@ export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ insert
     const youtubeSources = sources.filter((s) => s.type === 'youtube');
     const existingTitles = await getTodayTitles(db);
     const now = new Date().toISOString();
+    // Image fetches are budgeted across the whole run, not per source, so one
+    // busy feed early in the list cannot spend the entire subrequest headroom.
+    let imageBudget = MAX_FILLS_PER_RUN;
 
     for (const source of articleSources) {
       try {
@@ -37,6 +41,17 @@ export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ insert
           newItems.map((item) => categorize(item.title, item.summary, ai))
         );
 
+        // Copy thumbnails into R2 before insert. cdn.azadiwire.org points
+        // straight at the bucket, so an image missing here has no second
+        // chance to be filled at request time; the article keeps the
+        // publisher's URL instead.
+        const storedImages = await storeImages(
+          env?.CDN,
+          newItems.map((item) => item.thumbnail_url),
+          { limit: imageBudget }
+        );
+        imageBudget -= storedImages.attempted;
+
         const articles: Article[] = newItems.map((item, i) => {
           const { topic, importance } = categorized[i];
           const id = crypto.randomUUID();
@@ -50,6 +65,9 @@ export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ insert
             source_url: source.url,
             article_url: item.article_url,
             thumbnail_url: item.thumbnail_url,
+            image_key: item.thumbnail_url
+              ? storedImages.keys.get(item.thumbnail_url) ?? null
+              : null,
             published_at: item.published_at,
             fetched_at: now,
             topic,
@@ -92,8 +110,14 @@ export async function runFetcher(db: any, ai?: any, env?: any): Promise<{ insert
       }
     }
 
-    await deleteOldArticles(db);
+    const purgedImageKeys = await deleteOldArticles(db);
     await deleteOldVideos(db);
+
+    try {
+      await deleteImages(env?.CDN, purgedImageKeys);
+    } catch {
+      // Orphaned objects are harmless; don't fail the run over cleanup.
+    }
   } catch {
     errors++;
   }

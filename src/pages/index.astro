@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import { getArticles, searchArticles, getArticleSourceNames, getLatestVideos, getTopArticles, getReadDB } from '../lib/db';
 import { relativeTime } from '../lib/time';
+import { imageUrl } from '../lib/images';
 import { TOPICS, TOPIC_LABELS } from '../lib/types';
 import type { Article, Topic, Video } from '../lib/types';
 import { env } from 'cloudflare:workers';
@@ -183,9 +184,9 @@ function pageUrl(p: number): string {
     <ul class="article-list">
       {articles.map((article) => (
         <li class="article-item">
-          {article.thumbnail_url && (
+          {imageUrl(article) && (
             <img
-              src={article.thumbnail_url}
+              src={imageUrl(article)}
               alt={article.title}
               class="article-thumb"
               style="display:none"

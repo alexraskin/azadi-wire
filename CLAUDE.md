@@ -34,6 +34,7 @@ azadi-wire/
 │   │   ├── db.ts         # D1 database helpers
 │   │   ├── types.ts      # TypeScript interfaces & constants
 │   │   ├── time.ts       # Date formatting utilities
+│   │   ├── images.ts     # Thumbnail URL/key helpers
 │   │   ├── resend.ts     # Email service client
 │   │   └── fetcher/      # Article fetching pipeline
 │   │       ├── index.ts      # Orchestrator
@@ -42,6 +43,7 @@ azadi-wire/
 │   │       ├── categorizer.ts # AI topic classification
 │   │       ├── dedup.ts      # Deduplication logic
 │   │       ├── digest.ts     # Daily AI digest generation
+│   │       ├── images.ts     # Thumbnail caching into R2
 │   │       └── youtube.ts    # YouTube feed parsing
 │   ├── middleware.ts      # Security headers & CORS middleware
 │   ├── scripts/          # Client-side scripts (bookmarks.ts)
@@ -83,6 +85,7 @@ npm run migrate-local     # Apply migrations to local D1 database
 |---|---|---|
 | `DB` | D1 Database | SQLite database (`azadi-wire-db`) |
 | `AI` | Workers AI | Llama 3.3 70B for categorization & digests |
+| `CDN` | R2 Bucket | Cached article thumbnails (`azadi-wire-cdn`), served from `cdn.azadiwire.org` |
 | `ASSETS` | Assets | Static file serving |
 
 ### Environment Variables / Secrets
@@ -121,6 +124,7 @@ The fetcher runs every 15 minutes via Cloudflare Cron Triggers (`*/15 * * * *`),
 - `id` TEXT PRIMARY KEY
 - `title`, `summary`, `source_name`, `source_url`, `article_url` (UNIQUE)
 - `thumbnail_url`, `published_at`, `fetched_at`
+- `image_key` TEXT (nullable; key of the R2 copy of `thumbnail_url` — see Images below)
 - `topic` TEXT (DEFAULT `'general'`, see topics below)
 - `slug` TEXT UNIQUE (URL-safe title identifier)
 - `importance_score` INTEGER (AI-rated 1-10, nullable; 10 = breaking news, 1 = routine)
@@ -189,7 +193,8 @@ Articles are classified into one of these topics (defined in `src/lib/types.ts`)
 2. New URLs are checked against existing `article_url` entries (URL dedup)
 3. Titles are checked for similarity against recent articles (90% word-overlap threshold — see `src/lib/fetcher/dedup.ts`)
 4. New articles are categorized by AI (Llama 3.3 70B) with keyword fallback
-5. Articles older than 90 days and videos older than 30 days are automatically deleted
+5. Thumbnails are copied into R2 and the resulting key is stored on the row
+6. Articles older than 90 days and videos older than 30 days are automatically deleted, along with their R2 images
 
 ### Fetcher Pipeline (`src/lib/fetcher/index.ts`)
 
@@ -199,10 +204,11 @@ The main orchestrator:
 3. Fetches YouTube channels separately via `youtube.ts` and inserts videos
 4. Deduplicates articles against recent entries in the DB
 5. Categorizes uncategorized articles with AI
-6. Inserts new articles and updates FTS index
-7. At 6 PM UTC: generates and emails the daily digest
-8. Deletes articles older than 90 days and videos older than 30 days
-9. Records run metrics to `fetcher_runs`
+6. Copies article thumbnails into R2 (`src/lib/fetcher/images.ts`)
+7. Inserts new articles and updates FTS index
+8. At 6 PM UTC: generates and emails the daily digest
+9. Deletes articles older than 90 days and videos older than 30 days, and drops their R2 images
+10. Records run metrics to `fetcher_runs`
 
 ### AI Categorization (`src/lib/fetcher/categorizer.ts`)
 
@@ -305,6 +311,50 @@ Never cached: `/api/cron`, `/api/status`, `/api/subscribe`, `/api/unsubscribe`, 
 **Versioning** — the content version is the id of the newest `fetcher_runs` row with `inserted > 0`, memoized per isolate for 30s and refreshed in the background. A run that inserts articles makes versioned entries stale, not missing, so no visitor waits for a cold render.
 
 **Adding endpoints or pages** — a new path falls into the versioned 15-minute profile by default. Add it to `UNCACHEABLE` if it is per-user, authenticated, or state-dependent. When a page renders an error state instead of content (a D1 failure), set `Astro.response.headers.set('Cache-Control', NO_STORE)` so the failure is not stored.
+
+---
+
+## Images
+
+Article thumbnails are copied into the `azadi-wire-cdn` R2 bucket and served from
+`cdn.azadiwire.org`, a public custom domain pointed straight at the bucket. Pages,
+feeds, and OpenGraph tags link to that copy instead of hotlinking the publisher, so
+images survive a source deleting the asset and readers never touch source
+infrastructure.
+
+**Key** — `articles.image_key` is the SHA-256 of `thumbnail_url`, hex, first 32
+chars. The object lives at `thumbs/<key>`. Deterministic hashing means two articles
+carrying the same image share one object.
+
+**Fill is eager, in the fetcher.** The custom domain sits in front of the bucket
+with no Worker in the request path, so nothing can fill an object on demand: a
+missing object is a broken image. `storeImages()` in `src/lib/fetcher/images.ts`
+pulls thumbnails before insert, capped at `MAX_FILLS_PER_RUN` (60) across the whole
+run with `FILL_CONCURRENCY` (6) fetches in flight, which bounds the run's
+subrequests.
+
+**Failure degrades, it does not retry.** `image_key` is written only after the
+object is confirmed in the bucket. A fetch that fails, times out, or is rejected
+leaves the column `NULL`, and `imageUrl()` falls back to the publisher's URL —
+the behaviour that predates this cache. Rows inserted before the migration behave
+the same way and age out within the 90-day retention window.
+
+**What is accepted** — raster types only (`ALLOWED_IMAGE_TYPES` in
+`src/lib/images.ts`) under `MAX_IMAGE_BYTES` (5 MB). SVG is excluded deliberately:
+a source-controlled SVG served from a hostname inside our own zone would run script
+there.
+
+**Metadata matters.** R2 custom domains serve `Content-Type` and `Cache-Control`
+from the object's own `httpMetadata`, so both are set at `put()` time. Miss them and
+browsers get an uncached image with the wrong type. No CORS configuration is needed:
+`<img src>` loads are not subject to CORS.
+
+**Rendering** — always go through `imageUrl()` from `src/lib/images.ts`. It returns
+an absolute URL, so feed enclosures and OG tags use it unchanged.
+
+**Cleanup** — `deleteOldArticles()` returns the keys of purged rows and the fetcher
+drops those objects. A key shared with a surviving article is dropped too; that
+article falls back to hotlinking.
 
 ---
 
