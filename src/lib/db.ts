@@ -174,8 +174,8 @@ export async function insertArticle(
 ): Promise<void> {
   await db
     .prepare(
-      `INSERT OR IGNORE INTO articles (id, slug, title, summary, source_name, source_url, article_url, thumbnail_url, published_at, fetched_at, topic, importance_score)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT OR IGNORE INTO articles (id, slug, title, summary, source_name, source_url, article_url, thumbnail_url, image_key, published_at, fetched_at, topic, importance_score)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(
       article.id,
@@ -186,6 +186,7 @@ export async function insertArticle(
       article.source_url,
       article.article_url,
       article.thumbnail_url,
+      article.image_key,
       article.published_at,
       article.fetched_at,
       article.topic,
@@ -205,8 +206,8 @@ export async function insertArticlesBatch(
   const stmts = articles.map((article) =>
     db
       .prepare(
-        `INSERT OR IGNORE INTO articles (id, slug, title, summary, source_name, source_url, article_url, thumbnail_url, published_at, fetched_at, topic, importance_score)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT OR IGNORE INTO articles (id, slug, title, summary, source_name, source_url, article_url, thumbnail_url, image_key, published_at, fetched_at, topic, importance_score)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .bind(
         article.id,
@@ -217,6 +218,7 @@ export async function insertArticlesBatch(
         article.source_url,
         article.article_url,
         article.thumbnail_url,
+        article.image_key,
         article.published_at,
         article.fetched_at,
         article.topic,
@@ -281,9 +283,23 @@ export async function searchArticles(
   };
 }
 
-export async function deleteOldArticles(db: D1Database, daysOld: number = 90): Promise<void> {
+/**
+ * Purge articles past the retention window. Returns the R2 keys of the images
+ * they held so the caller can drop those objects too; a key is returned even
+ * when a surviving article shares it, in which case that article falls back to
+ * the publisher's own URL.
+ */
+export async function deleteOldArticles(
+  db: D1Database,
+  daysOld: number = 90
+): Promise<string[]> {
   const cutoff = new Date(Date.now() - daysOld * 86400000).toISOString();
+  const doomed = await db
+    .prepare('SELECT DISTINCT image_key FROM articles WHERE published_at < ? AND image_key IS NOT NULL')
+    .bind(cutoff)
+    .all<{ image_key: string }>();
   await db.prepare('DELETE FROM articles WHERE published_at < ?').bind(cutoff).run();
+  return doomed.results.map((r) => r.image_key);
 }
 
 export interface FetcherRun {

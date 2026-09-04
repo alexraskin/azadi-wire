@@ -7,6 +7,7 @@ export interface Article {
   source_url: string | null;
   article_url: string;
   thumbnail_url: string | null;
+  image_key: string | null;
   published_at: string;
   fetched_at: string;
   topic: Topic;

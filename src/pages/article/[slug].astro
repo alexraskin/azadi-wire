@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import { getArticleBySlug, getArticleById, getReadDB } from '../../lib/db';
 import { formatDate } from '../../lib/time';
+import { imageUrl } from '../../lib/images';
 import { TOPIC_LABELS } from '../../lib/types';
 import type { Topic } from '../../lib/types';
 import { env } from 'cloudflare:workers';
@@ -39,7 +40,7 @@ const articleJsonLd = !fetchError && article ? {
   headline: article.title,
   datePublished: new Date(article.published_at).toISOString(),
   ...(article.summary && { description: article.summary }),
-  ...(article.thumbnail_url && { image: article.thumbnail_url }),
+  ...(imageUrl(article) && { image: imageUrl(article) }),
   author: { '@type': 'Organization', name: article.source_name },
   publisher: { '@type': 'Organization', name: 'Azadi Wire', url: SITE_URL },
   mainEntityOfPage: `${SITE_URL}/article/${article.slug || article.id}`,
@@ -49,7 +50,7 @@ const articleJsonLd = !fetchError && article ? {
 <Base
   title={fetchError ? 'Error' : article.title}
   description={fetchError ? undefined : (article.summary || undefined)}
-  image={fetchError ? undefined : (article.thumbnail_url || undefined)}
+  image={fetchError ? undefined : (imageUrl(article) || undefined)}
   ogType="article"
   publishedTime={fetchError ? undefined : article.published_at}
   section={fetchError ? undefined : (TOPIC_LABELS[article.topic as Topic] || undefined)}
@@ -75,9 +76,9 @@ const articleJsonLd = !fetchError && article ? {
         <span>{formatDate(article.published_at)}</span>
         <span class="badge">{TOPIC_LABELS[article.topic as Topic] || article.topic}</span>
       </div>
-      {article.thumbnail_url && (
+      {imageUrl(article) && (
         <img
-          src={article.thumbnail_url}
+          src={imageUrl(article)}
           alt={article.title}
           class="article-detail-thumb"
           style="display:none"

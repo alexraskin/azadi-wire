@@ -1,6 +1,7 @@
 import rss from '@astrojs/rss';
 import { getArticles, getReadDB } from '../lib/db';
 import { TOPIC_LABELS } from '../lib/types';
+import { imageUrl } from '../lib/images';
 import type { Topic } from '../lib/types';
 import { cacheControl } from '../lib/cache';
 import { env } from 'cloudflare:workers';
@@ -27,8 +28,8 @@ export const GET = async ({ locals }: { locals: any }) => {
         a.source_url
           ? `<source url="${a.source_url}">${a.source_name}</source>`
           : `<source>${a.source_name}</source>`,
-        a.thumbnail_url
-          ? `<media:content url="${a.thumbnail_url}" medium="image" />`
+        imageUrl(a)
+          ? `<media:content url="${imageUrl(a)}" medium="image" />`
           : '',
       ]
         .filter(Boolean)

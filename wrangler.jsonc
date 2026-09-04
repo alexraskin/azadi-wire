@@ -25,6 +25,12 @@
 			"migrations_dir": "migrations"
 		}
 	],
+	"r2_buckets": [
+		{
+			"binding": "CDN",
+			"bucket_name": "azadi-wire-cdn"
+		}
+	],
 	"triggers": {
 		"crons": ["*/15 * * * *"]
 	},
