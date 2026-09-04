@@ -4,6 +4,7 @@ import { getDigestByDate, getRecentDigests, getReadDB } from '../lib/db';
 import { TOPIC_LABELS } from '../lib/types';
 import type { Topic } from '../lib/types';
 import { env } from 'cloudflare:workers';
+import { NO_STORE } from '../lib/cache';
 
 const db = getReadDB(env);
 
@@ -21,6 +22,12 @@ try {
   recentDigests = await getRecentDigests(db, 7);
 } catch {
   fetchError = true;
+}
+
+// The error state is a transient database failure, not content. Keep it out of
+// the edge cache so the page recovers on the next request.
+if (fetchError) {
+  Astro.response.headers.set('Cache-Control', NO_STORE);
 }
 
 function formatDigestDate(dateStr: string): string {
